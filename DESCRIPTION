@@ -1,0 +1,30 @@
+Package: recharts2
+Type: Package
+Title: An R Interface to ECharts3
+Version: 0.0.1
+Date: 2016-09-22
+Authors@R: c(
+    person("Yiying", "Wang", role = c("aut", "cre"), email = "madlogos@gmail.com"),
+    person("Baidu Inc", role = c("ctb", "cph"), comment = "the ECharts library under htmlwidgets/lib")
+    )
+Description: Provides an R interface to the JavaScript library ECharts3 for
+    interactive data visualization.
+Imports:
+    htmltools,
+    htmlwidgets (>= 0.4),
+    magrittr
+Suggests:
+    data.table,
+    dplyr,
+    ggthemes,
+    Hmisc,
+    jsonlite,
+    knitr,
+    RColorBrewer,
+    rmarkdown,
+    scales,
+    shiny (>= 0.12.1)
+License: MIT + file LICENSE
+LazyData: TRUE
+VignetteBuilder: knitr
+RoxygenNote: 5.0.1

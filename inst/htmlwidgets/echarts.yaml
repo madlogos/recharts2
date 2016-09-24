@@ -1,0 +1,14 @@
+dependencies:
+  - name: echarts
+    version: 3.2.3
+    src: "htmlwidgets/lib/echarts"
+    script:
+      - echarts.min.js
+      - geo/china.js
+      - geo/world.js
+      - theme/dark.js
+      - theme/infographic.js
+      - theme/macarons.js
+      - theme/roma.js
+      - theme/shine.js
+      - theme/vintage.js

@@ -1,0 +1,424 @@
+---
+title: "An Introduction to recharts Package"
+author: "Yiying Wang"
+date: "`r Sys.Date()`"
+output: 
+  knitr:::html_vignette:
+    number_sections: yes
+    toc: yes
+vignette: >
+  %\VignetteIndexEntry{An Introduction to recharts Package}
+  %\VignetteEngine{knitr::rmarkdown_notangle}
+  %\VignetteEncoding{UTF-8}
+---
+
+This package is still under active development. It is based on the last release of Baidu Echarts2 (v2.2.7). The documentation here always reflects the latest development version of **recharts** on [Github](https://github.com/madlogos/recharts). To install the package:
+
+```r
+if (!require(devtools)) library(devtools)
+install_github("madlogos/recharts")
+```
+
+# Knowledge Map of the Guidance
+
+1. Base Plots
+    1. Mono-coordinate System
+        1. Cartesian Coordinate System
+            1. [Scatter/Bubble Plot](Basic_Plots_01_Scatterplot.html)
+            1. [Bar/Column Chart](Basic_Plots_02_Bar.html)
+            1. [Line/Area Chart](Basic_Plots_03_Line.html)
+            1. [Candlestick/K Chart](Basic_Plots_04_K.html)
+            1. [Event River Chart](Basic_Plots_05_eventRiver.html)
+        1. Others
+            1. [Force Chart](Basic_Plots_11_Force.html)
+            1. [Chord Chart](Basic_Plots_12_Chord.html)
+            1. [Word Cloud](Basic_Plots_13_WordCloud.html)
+            1. [Venn Chart](Basic_Plots_14_Venn.html)
+            1. [Heatmap](Basic_Plots_15_Heatmap.html)
+    1. Multi-coordinate System
+        1. Polar Coordinate System
+            1. [Pie/Ring/Rose Chart](Basic_Plots_21_Pie.html)
+            1. [Funnel/Pyramid Chart](Basic_Plots_22_Funnel.html)
+            1. [Radar Chart](Basic_Plots_23_Radar.html)
+            1. [Gauge Chart](Basic_Plots_24_Gauge.html)
+        1. Others
+            1. [Map](Basic_Plots_31_Map.html)
+            1. [Tree Chart](Basic_Plots_32_Tree.html)
+            1. [Treemap](Basic_Plots_33_Treemap.html)
+1. [Mixed Plots](Mixed_Plots.html)
+1. Axis/Widget Configuration
+    1. Tune Series
+        1. [`setSeries`](setSeries.html)
+    1. Axis/Grid
+        1. [`setAxis`](Widget_01_Axis.html)
+        1. [`setPolar`](Widget_02_Polar.html)
+        1. [`setGrid`](Widget_03_Grid.html)
+    1. Graph Elements
+        1. [`addMarkLine`](Widget_11_markLine.html)
+        1. [`addMarkPoint`](Widget_12_markPoint.html)
+    1. Widgets
+        1. [`setTitle`](Widget_21_Title.html)
+        1. [`setLegend`](Widget_22_Legend.html)
+        1. [`setTimeline`](Widget_23_Timeline.html)
+        1. [`setToolbox`](Widget_24_Toolbox.html)
+        1. [`setDataRange`](Widget_25_DataRange.html)
+        1. [`setDataZoom`](Widget_26_DataZoom.html)
+        1. [`setRoam`](Widget_27_RoamController.html)
+    1. Feature Lists
+        1. [`aesStyle`](aesStyle.html)
+
+1. Aesthetic Configuration
+    1. [`setTooltip`](Widget_31_Tooltip.html)
+    1. [`setSymbols`](Widget_32_SymbolList.html)
+    1. [`setTheme`](Widget_33_Theme.html)
+1. [Customization](Cust_Plots.html)
+
+# Hello World
+
+The R package **recharts** provides an interface to the JavaScript library [ECharts2](http://echarts.baidu.com/echarts2) for data visualization. The goal of this package is to make it easy to create charts with only a few lines of R code. R users should be able to get started with ECharts without having to know HTML or JavaScript, although advanced users will benefit from their knowledge of JavaScript. Here is an example of a scatterplot that shows the basic syntax of this package:
+
+```{r}
+library(recharts)
+echartr(iris, ~Sepal.Length, ~Sepal.Width, series = ~Species)
+```
+
+The **recharts** package was built on top of [**htmlwidgets**](http://htmlwidgets.org), which can save us a lot of time on managing JavaScript dependencies and dealing with different types of output documents such as R Markdown and Shiny. You just create a chart, and we will take care of the rest of things when the chart is renderd in R Markdown, Shiny, or the R console / RStudio.
+
+The main function in this package is the `echartr()` function (an S3 generic function), and we want to make it smart enough to deal with different types of R data automatically. For example, when a data frame is passed to `echart()`, and the `x`/`y` variables are numeric, it should automatically figure out that you probably need a scatterplot, and the axes will be automatically generated. Of course, you can also override the automatic guess.
+
+# Quick Start
+
+Follow the steps below to make a plot yourself.
+
+## Data
+Always start from data itself. Let's use `mtcars` in the package `datasets`. You can type `?mtcars` to read the instruction.
+
+```{r}
+head(mtcars)
+```
+
+We want to know the relationship between `wt` (weight) and `mpg` (miles per gallon), a scatterplot is a good fit. It requires x and y variables of numeric.
+
+## Core Plot
+
+Use `echartr` to build the basic chart.
+
+```{r}
+echartr(mtcars, wt, mpg)
+```
+
+The grammar of `echartr` is 
+
+```{r, echo=FALSE}
+str(args(echartr))
+```
+
+### Arguments
+
++-----------+------------------------------------------------------------------+
+|  **Arg**  |               **Interpretation**               |
++===========+==================================================================+
+| **data**  | source data in the form of data.frame |
++-----------+------------------------------------------------------------------+
+|  x        | Independent variable(s). One or more columns of `data`. Could be time, numeric or characters.        |
+|           |
+|           | - In Cartesian coordinate system charts, `x` is linked with x-axis |
+|           | - In polar coordinate system charts, `x` var1 is linked with polar-axis, and `x` var2 is data series (linked with legends) |
+|           | - In other chart types, mono-coordinate system charts refer to Cartesian coordinat system examples, while multi-coordinates system charts refer to polar system examples.  |
++-----------+------------------------------------------------------------------+
+|  y        | dependent variable(s). One or more columns of `data`. Always numeric. |
++-----------+------------------------------------------------------------------+
+|  series   | series variable. A column of `data` which is treated as factors.   |
+|           |
+|           | - In Cartesian coordinate system charts, `series` is data series (linked with legends).   |
+|           | - In polar coordinate system charts, `series` is linked with polar systems. |
+|           | - In other chart types, mono-coordinate system charts refer to Cartesian coordinat system examples, while multi-coordinates system charts refer to polar system examples. |
++-----------+------------------------------------------------------------------+
+|  weight   | weight variable used in bubble, bar/column, line/area chart, linking with the size of graph elements. |
++-----------+------------------------------------------------------------------+
+|  z        | time variable. If `z` is assigned, a timeline widget will display. |
++-----------+------------------------------------------------------------------+
+|  lat      | latitude variable for map/heatmap. |
++-----------+------------------------------------------------------------------+
+|  lng      | longitude variable for map/heatmap. |
++-----------+------------------------------------------------------------------+
+|  type     | chart type. Default 'auto'. `type` as a vector is linked with `series`. |
++-----------+------------------------------------------------------------------+
+| subtype   | chart subtype. Default NULL. `subtype` as a vector is also linked with `series`.  |
++-----------+------------------------------------------------------------------+
+
+### Supported Chart Types
+
+`echartr` now supports the following types (the regex patterns in 'name' column, case insensitive). The 'type' column lists chart type names supported by Echarts2.
+
+```{r}
+knitr::kable(recharts:::validChartTypes[,c(1:3,5)])
+```
+
+You assign `data` and `x`, `y`, then `echartr` automatically processes the data using `recharts:::series_scatter` function.
+
+If `series` is assigned, a series-specfic scatterplot is shown. 
+
+```{r}
+echartr(mtcars, wt, mpg, factor(am, labels=c('Automatic', 'Manual')))
+```
+
+If `weight` is assigned and `type` is set `bubble`, a bubble chart is displayed.
+```{r}
+echartr(mtcars, wt, mpg, am, weight=gear, type='bubble')
+```
+
+### Special Notes
+
+#### Param List
+
+The input param list could be
+
+- symbols: `wt`, `mpg` or even as complicated as `factor(am, labels=c('Automatic', 'Mannual'))`
+- characters: `'wt'`, `'mpg'`
+- formulas: `~wt`, `~mpg`
+
+#### Data Requirements
+
+Data must be a data.frame. The data series and timeline will display in the original order of `series` and `z`, so you should sort the data.frame before making charts so as to make sure the display order is exactly what you want.
+
+When it comes to timeline (`z`), you must be very cautious. All the combination sets of `x`, `y`, `series`, `weight` should be exactly equal across all the levels of `z`. Otherwise you will find confusious overlap of graphs across timeline.
+
+You should pay special attention to `series`, as it behaves differently in mono-coordinate-system charts (those under Cartesian coordinate system) and multi-coordinate-system charts (those under polar coordinate system). In the former scenario, `series` represents data series. But in the latter scenario, `series` represents index of coordinate systems while `x[,2]` represents data series. That's because `type` and `subtype` are mapped to the levels of `series`, and in multi-coordinate-system charts, users tend to map different types/subtypes to differnt charts instead of different data series. 
+
+#### Type And Subtype
+`recharts` supports mixed chart types in some cases, e.g., bar and line.
+
+```{r}
+d <- data.table::dcast(mtcars, carb+gear~., mean, value.var='mpg')
+names(d)[3] <- 'mean.mpg'
+d$carb <- as.character(d$carb)
+echartr(d, carb, "mean.mpg", gear, type=c('vbar', 'vbar', 'line')) %>% 
+    setSymbols('emptycircle')
+```
+
+Or mixed subtypes. Refer to 'subtype' column in `recharts:::validChartTypes`. You can assign combined subtypes using '+', '_' or '|', e.g., 'stack+smooth' to simultaneously render the line chart stacked and smooth.
+
+```{r}
+echartr(d, carb, mean.mpg, gear, type='line', 
+        subtype=c('stack + smooth', 'stack + dotted', 'smooth + dashed')) %>%
+    setSymbols('emptycircle')
+```
+
+## Modify the Plot
+
+You can save the plot as an object and keep modifying the plot using `%>%`.
+
+```{r}
+g = echartr(mtcars, wt, mpg, factor(am, labels=c('Automatic', 'Manual')))
+```
+
+### Tune the Series
+
+The above command made an Echarts object `g` containing two series: 'Automatic' and 'Manual'. The data strcuture of `g` is:
+
+```
+- x
+    - series
+        - list 1
+            - name: 'Automatic'
+            - data: ...
+            - type: 'scatter'
+        - list 2
+            - name: 'Manual'
+            - data: ...
+            - type: 'scatter'
+    - legend
+    - xAxis
+    - yAxis
+    - tooltip
+    ...
+```
+
+If you want to customize the definition of the series directly, you can call the low-level function `setSeries`.
+
+Let's set 'Manual' series (series index 2) symbolSize 8, symbolRotate 30.
+
+```{r}
+g %>% setSeries(series=2, symbolSize=8, symbolRotate=30)
+```
+
+### markLine
+
+Markline the average level of the two series.
+
+```{r}
+g %>% addMarkLine(data=data.frame(type='average', name1='Avg'))
+```
+
+### markPoint
+
+Markpoint the maximum of series 1 ('Automatic').
+
+```{r}
+g %>% addMarkPoint(series=1, data=data.frame(type='max', name='Max'))
+```
+
+It's the same as
+```r
+g %>% addMarkPoint(series='Automatic', data=data.frame(type='max', name='Max'))
+```
+
+### Title
+
+Add title (in red) and subtitle (with reference link to <https://stat.ethz.ch/R-manual/R-devel/library/datasets/html/mtcars.html>) to the chart.
+
+```{r}
+link <- 'https://stat.ethz.ch/R-manual/R-devel/library/datasets/html/mtcars.html'
+g %>% setTitle('wt vs mpg', paste0('[Motor Trend](', link, ')'), 
+               textStyle=list(color='red'))
+```
+
+### Legend
+
+Modify the legend (in lime), and only select series 1 ('Automatic') at the beginning. 
+
+```{r}
+g %>% setLegend(selected='Automatic', textStyle=list(color='lime'))
+```
+
+### Toolbox
+
+Modify toolbox as English, and put it to the upper-right of the chart with vertical display. 
+
+```{r}
+g %>% setToolbox(lang='en', pos=2)
+```
+
+### DataZoom
+
+Add dataZoom (orignally there is not one).
+
+```{r}
+g %>% setDataZoom()
+```
+
+### Axis
+
+Modify axes to make x- and y-axis cross at zero.
+
+```{r}
+g %>% setXAxis(min=0) %>% setYAxis(min=0)
+```
+
+## Fortify the Chart
+
+### Theme
+
+Apply 'dark' theme to the chart. You can also apply "macarons", "infographic", "blue", "dark", "gray", "green", "helianthus", "macarons2", "mint", "red", "roma", "sakura", "shine",  and "vintage". 
+
+Calculable is a special interation in Echarts. In other charts (e.g.,pie), it is quite efficient.
+
+```{r}
+g %>% setTheme('dark', calculable=TRUE)
+```
+
+### Symbols
+
+Set symbolList for series 1 ('Automatic') 'heart' and that for series 2 ('Manual') 'star6'.
+
+```{r}
+g %>% setSymbols(c('heart', 'star6'))
+```
+
+## Altogether
+
+You can combine all the steps using a pipe chain. If you are familiar with JS, you can embed JS fragments using `JS()` for better effects.
+
+```{r}
+g %>% setSeries(series=2, symbolSize=8, symbolRotate=30) %>% 
+    addMarkLine(data=data.frame(type='average', name1='Avg')) %>%
+    addMarkPoint(series=1, data=data.frame(type='max', name='Max')) %>%
+    setTitle('wt vs mpg', paste0('[Motor Trend](', link, ')'), 
+               textStyle=list(color='red')) %>%
+    setLegend(selected='Automatic', textStyle=list(color='lime')) %>%
+    setToolbox(lang='en', pos=2) %>% setDataZoom() %>% 
+    setTheme('dark', calculable=TRUE) %>% setSymbols(c('heart', 'star6'))
+```
+
+# Low-level API
+
+## De Novo
+Given that ECharts supports so many types of charts, it may take a while for us to make `echartr()` really smart. With that in mind, we also provided a really low-level S3 method defined for lists. Since the main usage of ECharts is that you pass a JavaScript object to the method `.setOption()`, and we can construct such an object using a list in R. This low-level `echart.list()` method makes it possible for you to create arbitrary charts. Here is a simple example of a Chord diagram taken from http://echarts.baidu.com/doc/example/chord1.html:
+
+```{r}
+chordEx1 = list(
+  title = list(
+    text = '测试数据',
+    subtext = 'From d3.js',
+    x = 'right',
+    y = 'bottom'
+  ),
+  tooltip = list(
+    trigger = 'item',
+    formatter = JS('function(params) {
+      if (params.indicator2) { // is edge
+        return params.value.weight;
+      } else {// is node
+        return params.name
+      }
+    }')
+  ),
+  toolbox = list(
+    show = TRUE,
+    feature = list(
+      restore = list(show = TRUE),
+      magicType = list(show = TRUE, type = c('force', 'chord')),
+      saveAsImage = list(show = TRUE)
+    )
+  ),
+  legend = list(
+    x = 'left',
+    data = c('group1', 'group2', 'group3', 'group4')
+  ),
+  series = list(
+    list(
+      type = 'chord',
+      sort = 'ascending',
+      sortSub = 'descending',
+      showScale = TRUE,
+      showScaleText = TRUE,
+      data = list(
+        list(name = 'group1'),
+        list(name = 'group2'),
+        list(name = 'group3'),
+        list(name = 'group4')
+      ),
+      itemStyle = list(
+        normal = list(
+          label = list(show = FALSE)
+        )
+      ),
+      matrix = rbind(
+        c(11975,  5871, 8916, 2868),
+        c( 1951, 10048, 2060, 6171),
+        c( 8010, 16145, 8090, 8045),
+        c( 1013,   990,  940, 6907)
+      )
+    )
+  )
+)
+
+echart(chordEx1)
+```
+
+Apparently, all we did was to translate the JavaScript object in the [original example](http://echarts.baidu.com/doc/example/chord1.html) into R. Note we translated the function `tooltip.fomatter` using the `JS()` function in **htmlwidgets**. All other objects can be mapped naturally to R.
+
+## Modify the Echarts Object
+
+We can also yield an echarts object using `echartr` and then modify the object directly as we do to a S3 list, if we are familiar with echarts data structure.
+
+The following is the structure of the object `g` we producted by `echartr(mtcars, wt, mpg, factor(am, labels=c('Automatic', 'Mannual')))`.
+
+```r
+enquote(g)
+```
+
+# Finale
+
+Normally we do not want R users to specify a long list of options like that. As R users, you are more familiar with (and often work with) data structures like data frames, matrices, tables, and so on. Ideally we hope you can just pass a familiar data object, and we configure ECharts automatically for you whenever possible. We are still _far away_ from our goal at this moment, but we will be happy to know your feedback, and you are welcome to contribute code through [Github pull requests](https://github.com/madlogos/recharts).
