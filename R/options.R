@@ -116,9 +116,9 @@ setAxis = function(
     which = match.arg(which)
     axIdx = ifna(as.integer(substr(which, 2, 3)), 0)  # 0: main ax, 1: sub ax
     which = substr(which, 0, 1)  # x or y axis
-    hasZ = "timeline" %in% names(chart$x)
+    hasT = "timeline" %in% names(chart$x)
     allSeries = getSeriesPart(chart, 'category', drop=FALSE, fetch.all=TRUE)  # all levels of series
-    if (!hasZ) allSeries = as.matrix(allSeries, ncol=1)
+    if (!hasT) allSeries = as.matrix(allSeries, ncol=1)
     uniSeries = unique(as.vector(allSeries))
     if (!is.null(allSeries) && !is.null(series)){
         if (is.numeric(series)){
@@ -139,7 +139,7 @@ setAxis = function(
         series1 = uniSeries[! uniSeries %in% series]
 
     # original data along the axis
-    if (hasZ){
+    if (hasT){
         odata = lapply(chart$x$options, getMeta)
         if (!is.null(series)) {
             sdata = lapply(odata, function(lst) lst['series'])
@@ -186,7 +186,7 @@ setAxis = function(
                 )
         }
 
-    if (hasZ) x = chart$x$options[[1]] else x = chart$x
+    if (hasT) x = chart$x$options[[1]] else x = chart$x
     i = paste0(which, 'Axis')
     o = list(
         type = match.arg(type), show = show, position = match.arg(position),
@@ -224,13 +224,13 @@ setAxis = function(
             x[[i]][[2-axIdx]] = mergeList(x[[i]][[2-axIdx]], o1)
         }
     }
-    if (hasZ) chart$x$options[[1]] = x else chart$x = x
+    if (hasT) chart$x$options[[1]] = x else chart$x = x
 
     # revise axisIndex
     ax = paste0(which, "AxisIndex")
     if (!is.null(series1)){
         if (axIdx == 0) seriesAx1 = series1 else seriesAx1 = series
-        if (hasZ){
+        if (hasT){
             for (i in 1:length(chart$x$options)){
                 seriesAx1 = which(allSeries[,i] %in% seriesAx1)
                 for (j in seriesAx1) chart$x$options[[i]]$series[[j]][[ax]] = 1
@@ -283,8 +283,8 @@ flipAxis <- function(chart, flip=TRUE, ...){
     if (!inherits(chart, 'echarts'))
         stop('chart is not an Echarts object. ',
              'Check if you have missed a %>% in your pipe chain.')
-    hasZ <- 'timeline' %in% names(chart$x)
-    if (hasZ){
+    hasT <- 'timeline' %in% names(chart$x)
+    if (hasT){
         if ('xAxis' %in% names(chart$x$options[[1]]) &&
             'yAxis' %in% names(chart$x$options[[1]])) {
             axes <- exchange(chart$x$options[[1]]$xAxis,
@@ -350,7 +350,7 @@ setGrid <- function(chart, x=80, y=60, x2=80, y2=60, width=NULL, height=NULL,
     if (!inherits(chart, 'echarts'))
         stop('chart is not an Echarts object. ',
              'Check if you have missed a %>% in your pipe chain.')
-    hasZ <- 'timeline' %in% names(chart$x)
+    hasT <- 'timeline' %in% names(chart$x)
     types <- getSeriesPart(chart, 'type')
     widget <- match.arg(widget)
     if (widget == 'pane') widget <- 'grid'
@@ -369,7 +369,7 @@ setGrid <- function(chart, x=80, y=60, x2=80, y2=60, width=NULL, height=NULL,
         if (! missing(bgColor)) lstGrid[['backgroundColor']] <- getColors(bgColor)[1]
     }
     ## wrap up
-    if (hasZ){
+    if (hasT){
         if (widget == 'timeline'){
             chart$x$timeline <- mergeList(chart$x$timeline, lstGrid)
         }else if((widget == 'grid') ||
@@ -475,8 +475,8 @@ relocWidget <- function(chart, widgets, x=NULL, y=NULL, x2=NULL, y2=NULL){
 .getGridParam <- function(chart, control, pos, size, horizontal=TRUE){
     stopifnot(length(pos) == 4)  ## x, y, x2, y2
     stopifnot(length(size) == 2) ## height, width
-    hasZ <- 'timeline' %in% names(chart$x)
-    if (hasZ){
+    hasT <- 'timeline' %in% names(chart$x)
+    if (hasT){
         if (control == 'timeline')  obj <- chart$x$timeline
         else obj <- chart$x$options[[1]][[control]]
     }else{
@@ -534,7 +534,7 @@ tuneGrid <- function(chart, ...){
         stop('chart is not an Echarts object. ',
              'Check if you have missed a %>% in your pipe chain.')
     types <- getSeriesPart(chart, 'type')
-    hasZ <- 'timeline' %in% names(chart$x)
+    hasT <- 'timeline' %in% names(chart$x)
     # if not Cartesian Coord chart, skip out
 
     controls <- c('title', 'timeline', 'legend', 'toolbox', 'dataRange',
@@ -634,7 +634,7 @@ tuneGrid <- function(chart, ...){
 
             names(cumSize) <- widgets
 
-            if (hasZ){
+            if (hasT){
                 for (j in widgets){
                     if (j == 'timeline') chart$x[[j]][[w]] = unname(cumSize[j])
                     else {
@@ -670,10 +670,10 @@ tuneGrid <- function(chart, ...){
     ## additional tuning
     if ('dataZoom' %in% row.names(dfGrid))
         if (dfGrid['dataZoom', 'orient'] == 1){
-            if (hasZ) chart$x$options[[1]]$dataZoom$x <- ifnull(lstGrid$x, 80)
+            if (hasT) chart$x$options[[1]]$dataZoom$x <- ifnull(lstGrid$x, 80)
             else chart$x$dataZoom$x <- ifnull(lstGrid$x, 80)
         }else{
-            if (hasZ) chart$x$options[[1]]$dataZoom$y <- ifnull(lstGrid$y, 60)
+            if (hasT) chart$x$options[[1]]$dataZoom$y <- ifnull(lstGrid$y, 60)
             else chart$x$dataZoom$y <- ifnull(lstGrid$y, 60)
         }
     if ('timeline' %in% row.names(dfGrid)){
@@ -685,7 +685,7 @@ tuneGrid <- function(chart, ...){
     # collect all grid features
     if (all(types %in% c('scatter', 'line', 'bar', 'k', 'eventRiver')))
         if (length(lstGrid) > 0){
-            if (hasZ)
+            if (hasT)
                 chart$x$options[[1]][['grid']] <- lstGrid
             else
                 chart$x[['grid']] <- lstGrid
@@ -812,7 +812,7 @@ makeTitle <- function(title=NULL, subtitle=NULL, link=NULL, sublink=NULL,
 #'
 #'
 #' ## echarts with timeline
-#' g1 <- iris %>% echartR(x=Sepal.Width, y=Petal.Width, z=Species, type='scatter')
+#' g1 <- iris %>% echartR(x=Sepal.Width, y=Petal.Width, t=Species, type='scatter')
 #'
 #' ## simple titles/subtitles
 #' g1 %>% setTitle(
@@ -842,10 +842,10 @@ setTitle <- function(chart, title=NULL, subtitle=NULL, link=NULL, sublink=NULL,
     if (!inherits(chart, 'echarts'))
         stop('chart is not an Echarts object. ',
              'Check if you have missed a %>% in your pipe chain.')
-    hasZ <- 'timeline' %in% names(chart$x)
+    hasT <- 'timeline' %in% names(chart$x)
     if (!missing(title)) title <- ifnull(title, "")
     if (!missing(subtitle)) subtitle <- ifnull(subtitle, "")
-    if (hasZ){  # has a timeline
+    if (hasT){  # has a timeline
         if (is.null(show)) {
             for (i in 1:length(chart$x$options))
                 chart$x$options[[i]]$title <- NULL
@@ -1081,8 +1081,8 @@ setToolbox <- function(chart, show=TRUE, language='cn',
     if (!inherits(chart, 'echarts'))
         stop('chart is not an Echarts object. ',
              'Check if you have missed a %>% in your pipe chain.')
-    hasZ <- 'timeline' %in% names(chart$x)
-    if (hasZ){
+    hasT <- 'timeline' %in% names(chart$x)
+    if (hasT){
         if (is.null(show)) {
             chart$x$options[[1]]$toolbox <- NULL
             return(chart %>% tuneGrid())
@@ -1198,7 +1198,7 @@ makeDataZoom <- function(show=FALSE, pos=6, range=NULL, width=30,
 #' g %>% setDataZoom(fill=rgba(c(col2rgb('gold'), 0.3)),
 #'                   handle=rgba(c(col2rgb('gold'), 1)))
 #'
-#' g1 <- iris %>% echartR(x=Sepal.Width, y=Petal.Width, z=Species, type='scatter')
+#' g1 <- iris %>% echartR(x=Sepal.Width, y=Petal.Width, t=Species, type='scatter')
 #' g1 %>% setDataZoom(fill=rgba(c(col2rgb('lightgreen'), 0.2)),
 #'                   handle=rgba(c(col2rgb('darkgreen'), 0.5)))
 #' }
@@ -1210,8 +1210,8 @@ setDataZoom <- function(chart, show=TRUE, pos=6, range=NULL, width=30,
     if (!inherits(chart, 'echarts'))
         stop('chart is not an Echarts object. ',
              'Check if you have missed a %>% in your pipe chain.')
-    hasZ <- 'timeline' %in% names(chart$x)
-    if (hasZ){
+    hasT <- 'timeline' %in% names(chart$x)
+    if (hasT){
         if (is.null(show)) {
             chart$x$options[[1]]$dataZoom <- NULL
             return(chart %>% tuneGrid())
@@ -1342,7 +1342,7 @@ makeDataRange <- function(show=FALSE, pos=8, min=NULL, max=NULL, splitNumber=5,
 #' g <- iris %>% echartR(x=Sepal.Width, y=Petal.Width, series=Species, type='scatter')
 #' g %>% setDataRange()
 #'
-#' g1 <- iris %>% echartR(x=Sepal.Width, y=Petal.Width, z=Species, type='scatter')
+#' g1 <- iris %>% echartR(x=Sepal.Width, y=Petal.Width, t=Species, type='scatter')
 #' g1 %>% setDataRange(valueRange=c(0, 2.5))
 #' }
 setDataRange <- function(
@@ -1354,7 +1354,7 @@ setDataRange <- function(
     if (!inherits(chart, 'echarts'))
         stop('chart is not an Echarts object. ',
              'Check if you have missed a %>% in your pipe chain.')
-    hasZ <- 'timeline' %in% names(chart$x)
+    hasT <- 'timeline' %in% names(chart$x)
     if (! is.null(valueRange[1])) {
         if (is.numeric(valueRange) && length(valueRange) > 1){
             min <- range(valueRange)[1]
@@ -1374,7 +1374,7 @@ setDataRange <- function(
         color=color, splitList=splitList, initialRange=initialRange
     )
     if (!is.null(lst)){
-        if (hasZ){
+        if (hasT){
             if (is.null(show)) {
                 chart$x$options[[1]]$dataRange <- NULL
                 return(chart %>% tuneGrid())
@@ -1431,7 +1431,7 @@ setSymbols <- function(chart, symbols=NULL, ...){
     if (!inherits(chart, 'echarts'))
         stop('chart is not an Echarts object. ',
              'Check if you have missed a %>% in your pipe chain.')
-    hasZ <- 'timeline' %in% names(chart$x)
+    hasT <- 'timeline' %in% names(chart$x)
     if (!is.null(symbols)){
         intersectSymbols <- symbols[tolower(symbols) %in% tolower(validSymbols)]
         idx <- sapply(intersectSymbols, function(x) {
@@ -1439,7 +1439,7 @@ setSymbols <- function(chart, symbols=NULL, ...){
         })
         symbolList <- as.list(validSymbols[unlist(idx)])
         if (length(symbolList) > 0) {
-            if (hasZ){
+            if (hasT){
                 nlvlseries <- sapply(chart$x$options, function(lst) {
                     length(lst$series)})
                 nlvlseries <- max(unlist(nlvlseries))
@@ -1498,9 +1498,9 @@ setRoam <- function(chart, show=TRUE, pos=2, width=80, height=120,
     if (!inherits(chart, 'echarts'))
         stop('chart is not an Echarts object. ',
              'Check if you have missed a %>% in your pipe chain.')
-    hasZ <- 'timeline' %in% names(chart$x)
+    hasT <- 'timeline' %in% names(chart$x)
     if (is.null(show)){
-        if (hasZ)
+        if (hasT)
             chart$x$options[[1]]$roamController <- NULL
         else
             chart$x$roamController <- NULL
@@ -1516,7 +1516,7 @@ setRoam <- function(chart, show=TRUE, pos=2, width=80, height=120,
         lstRoam[c('x', 'y')] <- pos[1:2]
 
         if (is.null(mapTypeControl)){
-            names(lstRoam$mapTypeControl) <- if (hasZ)
+            names(lstRoam$mapTypeControl) <- if (hasT)
                 gsub("^(.*)|", "\\1", chart$x$options[[1]]$series[[1]]$mapType) else
                     gsub("^(.*)|", "\\1", chart$x$series[[1]]$mapType)
         }else if (is.list(mapTypeControl)){
@@ -1526,7 +1526,7 @@ setRoam <- function(chart, show=TRUE, pos=2, width=80, height=120,
             names(lstRoam$mapTypeControl) <- mapTypeControl
         }
 
-        if (hasZ)
+        if (hasT)
             chart$x$options[[1]]$roamController <- lstRoam
         else
             chart$x$roamController <- lstRoam
@@ -1573,7 +1573,7 @@ setRoam <- function(chart, show=TRUE, pos=2, width=80, height=120,
 #'                                fontWeight='bold', fontSize=16))
 #'
 #' # With Timeline
-#' g1 <- iris %>% echartR(x=Sepal.Width, y=Petal.Width, z=Species, type='scatter')
+#' g1 <- iris %>% echartR(x=Sepal.Width, y=Petal.Width, t=Species, type='scatter')
 #' g1 %>% setLegend(pos=12, selected='none',
 #'                  textStyle=list(fontFamily='Courier New', fontSize=16))
 #' }
@@ -1585,7 +1585,7 @@ setLegend <- function(
         stop('chart is not an Echarts object. ',
              'Check if you have missed a %>% in your pipe chain.')
 
-    hasZ <- 'timeline' %in% names(chart$x)
+    hasT <- 'timeline' %in% names(chart$x)
     series <- getSeriesPart(chart, 'category', fetch.all=TRUE)
     if (!is.null(dim(series))) series <- series[,1]
     series <- series[ifna(series, '') !='']
@@ -1628,7 +1628,7 @@ setLegend <- function(
             lstLegend[['data']] <- overideData
 
     if (! is.null(show)) {
-        if (hasZ){
+        if (hasT){
             if (is.null(show)) {
                 chart$x$options[[1]]$legend <- NULL
                 return(chart %>% tuneGrid())
@@ -1652,12 +1652,12 @@ autoPolar <- function(chart, type){
         stop('chart is not an Echarts object. ',
              'Check if you have missed a %>% in your pipe chain.')
     chartTypes <- getSeriesPart(chart, 'type')
-    hasZ <- 'timeline' %in% names(chart$x)
+    hasT <- 'timeline' %in% names(chart$x)
     if (!all(chartTypes %in% c('radar'))) return(chart)
 
     # get chart meta data
-    hasZ <- 'timeline' %in% names(chart$x)
-    if (hasZ){
+    hasT <- 'timeline' %in% names(chart$x)
+    if (hasT){
         data <- lapply(chart$x$options, function(l) getMeta(l))
         list.names <- names(data[[1]])
         data <- lapply(list.names, function(v) {
@@ -1669,10 +1669,10 @@ autoPolar <- function(chart, type){
     dt$idx <- if (is.null(data$series)) 1 else data$series[,1]
     index <- as.character(unique(dt$idx))
     dt$series <- if (ncol(data$x) == 1) names(data$y)[1] else data$x[,2]
-    if (!is.null(data$z)) {
-        dt$z <- data$z[,1]
-        dt <- data.table::dcast(dt, idx + x + series + z ~., sum, value.var='y')
-        names(dt) <- c('idx', 'x', 'series', 'z', 'y')
+    if (!is.null(data$t)) {
+        dt$t <- data$t[,1]
+        dt <- data.table::dcast(dt, idx + x + series + t ~., sum, value.var='y')
+        names(dt) <- c('idx', 'x', 'series', 't', 'y')
     }else{
         dt <- data.table::dcast(dt, idx + x + series ~., sum, value.var='y')
         names(dt) <- c('idx', 'x', 'series', 'y')
@@ -1699,7 +1699,7 @@ autoPolar <- function(chart, type){
         return(o)
     })
 
-    if (hasZ){
+    if (hasT){
         chart$x$options[[1]][['polar']] <- obj
     }else{
         chart$x[['polar']] <- obj
@@ -1776,8 +1776,8 @@ setPolar <- function(chart, polarIndex=NULL, center=c('50%', '50%'), radius='75%
     chartTypes <- getSeriesPart(chart, 'type')
     if (!all(chartTypes=='radar')) return(chart)
 
-    hasZ <- 'timeline' %in% names(chart$x)
-    if (hasZ){
+    hasT <- 'timeline' %in% names(chart$x)
+    if (hasT){
         nIndex <- length(chart$x$options[[1]]$series)
     }else{
         nIndex <- length(chart$x$series)
@@ -1804,7 +1804,7 @@ setPolar <- function(chart, polarIndex=NULL, center=c('50%', '50%'), radius='75%
     if (!missing(axisName)) lstPolar[['name']] <- axisName
 
     for (i in polarIndex){
-        if (hasZ){
+        if (hasT){
             chart$x$options[[1]]$polar[[i]] <- mergeList(
                 chart$x$options[[1]]$polar[[i]], lstPolar)
         }else{
@@ -1979,7 +1979,7 @@ setTheme <- function(
     if (!identical(theme, 'asis')) chart$x[['theme']] <- theme
     if (missing(theme) || is.null(theme)) chart$x[['theme']] <- NULL
 
-    hasZ <- 'timeline' %in% names(chart$x)
+    hasT <- 'timeline' %in% names(chart$x)
 
     ## set colors
     ### get color
@@ -1989,7 +1989,7 @@ setTheme <- function(
         colors <- getColors(paste0(theme, 'theme'))
     }
     ### set color
-    if (hasZ){
+    if (hasT){
         nSeries <- sapply(chart$x$options, function(lst) {
             return(length(lst$series))
         })
@@ -2014,7 +2014,7 @@ setTheme <- function(
     ### special chart type, special color setting
     ### if wordCloud, change itemStyle one by one
     if (any('wordCloud' %in% getSeriesPart(chart, 'type'))){
-        if (hasZ){
+        if (hasT){
             for (iZ in seq_along(lsts)){
                 vecS <- seq_along(lsts[[iZ]]$series)
                 vWC <- sapply(vecS, function(i) lsts[[iZ]]$series[[i]]$type)
@@ -2096,11 +2096,11 @@ setTheme <- function(
 
     if (!missing(animationDuration)){
         lst[['animationDuration']] <- animationDuration
-        if (hasZ) chart$x$timeline[['playInterval']] <- animationDuration
+        if (hasT) chart$x$timeline[['playInterval']] <- animationDuration
     }
 
     ## merge list back to echarts object
-    if (hasZ) {
+    if (hasT) {
         lsts[[1]] <- lst
         chart$x$options <- lsts
     }else chart$x <- lst
@@ -2236,7 +2236,7 @@ determineFormatter <- function(type){
 #' @param series A vector of series indices or names. e.g., \code{c('setosa', 'virginica')}
 #' or \code{1:2}
 #' @param timeslots A vector of time slices indices or names, e.g., \code{c(1990, 1992)}
-#'  or \code{c(1,3)}. You can also use \code{z} as a short form of \code{timeslots}.
+#'  or \code{c(1,3)}. You can also use \code{t} as a short form of \code{timeslots}.
 #' @param trigger Type of trigger, \code{'item'}, or \code{'axis'}.
 #' @param formatter The format of the tooltip content.
 #' \describe{
@@ -2328,15 +2328,15 @@ determineFormatter <- function(type){
 #' bgCol <- unname(apply(bg, 2, rgba))  # get rgba colors with alpha
 #' iris$tag <- 1 + as.integer(row.names(iris)) %% 3
 #' iris <- iris[order(iris$tag),]
-#' g1 <- echartR(iris, Sepal.Width, Petal.Width, series=Species, z=tag)
+#' g1 <- echartR(iris, Sepal.Width, Petal.Width, series=Species, t=tag)
 #' g1 %>% setTooltip(series='setosa', bgColor=bgCol[1]) %>%
 #'        setTooltip(series=2, bgColor=bgCol[2]) %>%
 #'        setTooltip(series=3, bgColor=bgCol[3]) %>%
-#'        setTooltip(z=1, borderColor='red', borderWidth=3) %>%
-#'        setTooltip(z=2, borderColor='gold', borderWidth=3) %>%
-#'        setTooltip(z=3, borderColor='green', borderWidth=3)
+#'        setTooltip(t=1, borderColor='red', borderWidth=3) %>%
+#'        setTooltip(t=2, borderColor='gold', borderWidth=3) %>%
+#'        setTooltip(t=3, borderColor='green', borderWidth=3)
 #'
-#' g1 %>% setTooltip(series=2, z=2, bgColor='blue')
+#' g1 %>% setTooltip(series=2, t=2, bgColor='blue')
 #' # tooltip format of series 2 in the 2nd timeslot is changed to bg blue,
 #' # while it in the 3rd timeslot is reset to default
 #' }
@@ -2350,7 +2350,7 @@ setTooltip <- function(chart, series=NULL, timeslots=NULL, trigger=NULL,
     if (!inherits(chart, 'echarts'))
         stop('chart is not an Echarts object. ',
              'Check if you have missed a %>% in your pipe chain.')
-    if ('z' %in% names(list(...))) timeslots <- list(...)[['z']]
+    if ('t' %in% names(list(...))) timeslots <- list(...)[['t']]
 
     chartTypes <- getSeriesPart(chart, 'type')
     if ('eventRiver' %in% chartTypes) enterable <- TRUE
@@ -2358,9 +2358,9 @@ setTooltip <- function(chart, series=NULL, timeslots=NULL, trigger=NULL,
     uniSeries <- getSeriesPart(chart, 'category', fetch.all=TRUE)
     if (!is.null(dim(uniSeries))) uniSeries <- uniSeries[,1]
 
-    hasZ <- 'timeline' %in% names(chart$x)
+    hasT <- 'timeline' %in% names(chart$x)
     timeXAxis <- FALSE
-    if (! hasZ) {
+    if (! hasT) {
         timeslots <- NULL
         if ('xAxis' %in% names(chart$x)) if (chart$x$xAxis[[1]]$type == 'time'){
             trigger <- 'item'
@@ -2395,9 +2395,9 @@ setTooltip <- function(chart, series=NULL, timeslots=NULL, trigger=NULL,
     }
 
     setAlongSZ <- c(!is.null(series), !is.null(timeslots))
-    ## By default, do not set tooltip along series or z
+    ## By default, do not set tooltip along series or t
     if (ifnull(show, TRUE)){
-        if (hasZ){
+        if (hasT){
             if (is.null(chart$x$options[[1]][['tooltip']]))
                 chart$x$options[[1]][['tooltip']] <- list(show=TRUE)
             else
@@ -2422,14 +2422,14 @@ setTooltip <- function(chart, series=NULL, timeslots=NULL, trigger=NULL,
     defaultPart <- "makeTooltip(keepDefault=TRUE, type='"
 
     if (identical(setAlongSZ, c(FALSE, FALSE))){  # global set
-        lhs <- ifelse(hasZ, "chart$x$options[[1]][['tooltip']]",
+        lhs <- ifelse(hasT, "chart$x$options[[1]][['tooltip']]",
                       "chart$x[['tooltip']]")
         rhs <- paste0(fixedPart, chartTypes[[1]],
                       ifelse(timeXAxis, "_time'", "'"), ")), type='",
                       chartTypes[[1]], "')")
 
     }else if (identical(setAlongSZ, c(TRUE, FALSE))){  # set along series
-        if (hasZ) lhs <- paste0("chart$x$options[[1]]$series[[",
+        if (hasT) lhs <- paste0("chart$x$options[[1]]$series[[",
                                 vecS, "]][['tooltip']]")
         else lhs <- paste0("chart$x$series[[", vecS, "]][['tooltip']]")
         rhs <- paste0(fixedPart, chartTypes[vecS, 1],
@@ -2437,7 +2437,7 @@ setTooltip <- function(chart, series=NULL, timeslots=NULL, trigger=NULL,
                       chartTypes[vecS, 1], "')")
 
     }else if (identical(setAlongSZ, c(FALSE, TRUE))){  # set along timeline
-        if (hasZ) {  # if not hasZ, this senario fails
+        if (hasT) {  # if not hasT, this senario fails
             lhs <- paste0("chart$x$options[[", vecZ, "]][['tooltip']]")
             rhs <- paste0(fixedPart, chartTypes[1, vecZ],
                           ifelse(timeXAxis, "_time'", "'"), "')), type='",
@@ -2454,7 +2454,7 @@ setTooltip <- function(chart, series=NULL, timeslots=NULL, trigger=NULL,
             rhs <- c(rhs, rhs1)
         }
 
-    }else{  # set along s and z
+    }else{  # set along s and t
         vecZS <- as.matrix(expand.grid(vecZ, vecS))
         vecZ1 <- vecZ + 1
         if (any(vecZ1 > length(chart$x$timeline$data))){
@@ -2462,7 +2462,7 @@ setTooltip <- function(chart, series=NULL, timeslots=NULL, trigger=NULL,
                                                            c(vecZ, vecZ1)])
         }
         vecZS1 <- as.matrix(expand.grid(vecZ1, vecS))
-        if (hasZ) {
+        if (hasT) {
             lhs <- paste0("chart$x$options[[", vecZS[,1], "]]$series[[",
                           vecZS[,2], "]][['tooltip']]")
             lhs1 <- paste0("chart$x$options[[", vecZS1[,1], "]]$series[[",
@@ -2494,7 +2494,7 @@ setTT <- setTooltip
 
 #' Set \code{timeline} of Echarts
 #'
-#' Set timeline of Echarts when the echarts object contains timeline slices (z). \cr
+#' Set timeline of Echarts when the echarts object contains timeline slices (t). \cr
 #' When an echart object is generated, you can modify it by setting tooltip using
 #' \code{\link{\%>\%}}.
 #'
@@ -2540,7 +2540,7 @@ setTT <- setTooltip
 #' @param symbol Character. The symbol used in timeline. Default 'emptyDiamond'.
 #' You can use symbols in \code{\link{setSymbols}}.
 #' @param symbolSize The size of the symbols. Default 4.
-#' @param currentIndex The current index position, in correspondance with \code{z}.
+#' @param currentIndex The current index position, in correspondance with \code{t}.
 #' It is used to show specific timeline slices. Default 0.
 #' @param data The data list of the timeline, also used as timeline data label.
 #' Default NULL.
@@ -2555,7 +2555,7 @@ setTT <- setTooltip
 #' ## type = "number"
 #' iris$tag <- 1 + as.integer(row.names(iris)) %% 3
 #' iris <- iris[order(iris$tag),]
-#' g <- echartR(iris, Sepal.Width, Petal.Width, series=Species, z=tag)
+#' g <- echartR(iris, Sepal.Width, Petal.Width, series=Species, t=tag)
 #' g %>% setTimeline(y2=30, symbol='emptyCircle',
 #'                   autoPlay=FALSE, data=c('tag 1', 'tag 2', 'tag 3'))
 #'
@@ -2564,7 +2564,7 @@ setTT <- setTooltip
 #' ### the label text
 #' iris$date <- as.Date(paste0("2013-1-", 1 + as.integer(row.names(iris)) %% 5))
 #' iris <- iris[order(iris$date),]
-#' g <- echartR(iris, Sepal.Width, Petal.Width, series=Species, z=date)
+#' g <- echartR(iris, Sepal.Width, Petal.Width, series=Species, t=date)
 #' g %>% setTimeline(y2=30, symbol='emptyCircle', autoPlay=FALSE, label=list(
 #'       formatter=JS(paste('function(s) {return s.slice(8,10) + "\u65e5";}'))))
 #' }
@@ -2588,7 +2588,7 @@ setTimeline <- function(chart, show=TRUE, type=c('time', 'number'), realtime=TRU
     }
     lst <- chart$x$timeline
     type <- match.arg(type)
-    if (inherits(getMeta(chart$x$options[[1]])$z[,1],
+    if (inherits(getMeta(chart$x$options[[1]])$t[,1],
                  c("Date", "POSIXct", "POSIXlt"))){
         type <- 'time'
     }else{
@@ -2765,9 +2765,9 @@ overideGeoCoord <- function(chart, geoCoord=NULL){
 #' @param series Vector. Specify which series you want to insert heatmap. Could be
 #' numeric (index of the series) or string (series name). If NULL, then apply to all.
 #' Default NULL.
-#' @param timeslots Vector. Specify which timeslots (z) you want to insert heatmap.
+#' @param timeslots Vector. Specify which timeslots (t) you want to insert heatmap.
 #' Could be numeric (index of the timeslot) or string (timeslot name).
-#' If NULL, then apply to all. Default NULL. You could use \code{z} for short.
+#' If NULL, then apply to all. Default NULL. You could use \code{t} for short.
 #' @param data The heatmap source data. Two modes:
 #' \describe{
 #'   \item{data.frame or matrix}{A data.frame or matrix of 3 columns: lng (-180 ~ 180),
@@ -2813,8 +2813,8 @@ addHeatmap <- function(chart, series=NULL, timeslots=NULL, data=NULL,
         stop('chart is not an Echarts object. ',
              'Check if you have missed a %>% in your pipe chain.')
     mode <- match.arg(mode)
-    if ('z' %in% names(list(...))) timeslots <- list(...)[['z']]
-    hasZ <- 'timeline' %in% names(chart$x)
+    if ('t' %in% names(list(...))) timeslots <- list(...)[['t']]
+    hasT <- 'timeline' %in% names(chart$x)
 
     if (is.null(data)) {
         return(chart)
@@ -2841,8 +2841,8 @@ addHeatmap <- function(chart, series=NULL, timeslots=NULL, data=NULL,
         data=unname(data), gradientColors=gradientColors, blurSize=blurSize,
         minAlpha=minAlpha, valueScale=valueScale, opacity=opacity)
 
-    # define series and z
-    if (hasZ){
+    # define series and t
+    if (hasT){
         if (is.null(timeslots))
             timeslots <- seq_along(chart$x$options)
         else
@@ -2860,7 +2860,7 @@ addHeatmap <- function(chart, series=NULL, timeslots=NULL, data=NULL,
         series <- 1
     }else{  # map mode is 'split'
         if (is.null(series)){
-            series <- if (hasZ)
+            series <- if (hasT)
                 seq_len(max(sapply(chart$x$options, function(l) {
                     length(l$series)}))) else
                         seq_len(length(chart$x$series))
@@ -2886,14 +2886,14 @@ addHeatmap <- function(chart, series=NULL, timeslots=NULL, data=NULL,
                     lData, chart$x$series[[s]]$heatmap$data)
         }
     }else{  # with timeline
-        for (z in timeslots){
+        for (t in timeslots){
             for (s in ifnull(series, 1)){  # series is null: mono series
-                lData <- chart$x$options[[z]]$series[[s]]$heatmap$data
-                chart$x$options[[z]]$series[[s]]$heatmap <- lstHeatmap
+                lData <- chart$x$options[[t]]$series[[s]]$heatmap$data
+                chart$x$options[[t]]$series[[s]]$heatmap <- lstHeatmap
                 if (mode == 'add')
-                    if ('heatmap' %in% names(chart$x$options[[z]]$series[[s]]))
-                        chart$x$options[[z]]$series[[s]]$heatmap$data <- append(
-                            lData, chart$x$options[[z]]$series[[s]]$heatmap$data)
+                    if ('heatmap' %in% names(chart$x$options[[t]]$series[[s]]))
+                        chart$x$options[[t]]$series[[s]]$heatmap$data <- append(
+                            lData, chart$x$options[[t]]$series[[s]]$heatmap$data)
             }
         }
     }
@@ -2948,8 +2948,8 @@ addNameMap <- function(chart, nameMap, mode=c('add', 'overide')){
             stop('list nameMap must be named with the names you want to translate!')
         lstNameMap <- nameMap
     }
-    hasZ <- 'timeline' %in% names(chart$x)
-    if(hasZ){
+    hasT <- 'timeline' %in% names(chart$x)
+    if(hasT){
         if (mode == 'add')
             if ('nameMap' %in% names(chart$x$options[[1]]$series[[1]]))
                 lstNameMap <- mergeList(
@@ -2977,7 +2977,7 @@ overideNameMap <- function(chart, ...){
 #' @param series Numeric (series index) or character (series name), numeric preferred.
 #' If set NULL, then apply the \code{markPoint} to all the series.
 #' @param timeslots Numeric (timeslot index) or character (timeslot name), numeric is preferred.
-#' If set NULL, then apply the \code{markPoint} to all the timeslots. You can use \code{z}
+#' If set NULL, then apply the \code{markPoint} to all the timeslots. You can use \code{t}
 #' for short.
 #' @param data Data.frame, the data of the \code{markLine}s. It must contain the
 #' following columns: \code{\strong{name1}}, \code{name2, value | type} and/or
@@ -3031,8 +3031,8 @@ addMarkLine <- function(
     if (!inherits(chart, 'echarts'))
         stop('chart is not an Echarts object. ',
              'Check if you have missed a %>% in your pipe chain.')
-    if ('z' %in% names(list(...))) timeslots <- list(...)[['z']]
-    hasZ <- 'timeline' %in% names(chart$x)
+    if ('t' %in% names(list(...))) timeslots <- list(...)[['t']]
+    hasT <- 'timeline' %in% names(chart$x)
 
     # data validation
     if (is.null(data)) {
@@ -3065,8 +3065,8 @@ addMarkLine <- function(
         symbol <- as.vector(validSymbols[unlist(iSymbol)])
     }
 
-    # define z
-    if (hasZ){
+    # define t
+    if (hasT){
         if (is.null(timeslots))
             timeslots <- seq_along(chart$x$options)
         else
@@ -3190,41 +3190,41 @@ addMarkLine <- function(
         }
 
     }else{  # with timeline
-        for (z in timeslots){
+        for (t in timeslots){
             if (length(series) >0)
-                for (s in series[[z]]){
+                for (s in series[[t]]){
                     # series is null, mono series
                     dt <- if ('series' %in% names(data))
-                        data[data$series==allSeries[[z]][which(series==s)],] else data
+                        data[data$series==allSeries[[t]][which(series==s)],] else data
                     lstML$data <- unname(apply(
                         dt, 1, .mkMLbyRow,
-                        type=chart$x$options[[z]]$series[[s]]$type))
-                    if ('markLine' %in% names(chart$x$options[[z]]$series[[s]]))
+                        type=chart$x$options[[t]]$series[[s]]$type))
+                    if ('markLine' %in% names(chart$x$options[[t]]$series[[s]]))
                         lstML$data <- append(
-                            chart$x$options[[z]]$series[[s]]$markLine$data,
+                            chart$x$options[[t]]$series[[s]]$markLine$data,
                             lstML$data)
-                    chart$x$options[[z]]$series[[s]]$markLine <- lstML
+                    chart$x$options[[t]]$series[[s]]$markLine <- lstML
                 }
 
             if (length(newSeries) > 0){
                 for (ns in seq_along(newSeries)){
-                    chart$x$options[[z]]$series <-
-                        append(chart$x$options[[z]]$series, list(list(
+                    chart$x$options[[t]]$series <-
+                        append(chart$x$options[[t]]$series, list(list(
                             name=newSeries[ns], data=list(list('-')),
-                            type=chart$x$options[[z]]$series[[1]]$type)))
+                            type=chart$x$options[[t]]$series[[1]]$type)))
                     dt <- if ('series' %in% names(data))
                         data[data$series==newSeries[ns],] else data
                     lstML$data <- unname(apply(
                         dt, 1, .mkMLbyRow,
-                        type=chart$x$options[[z]]$series[[ns]]$type))
-                    idxNew <- length(chart$x$options[[z]]$series)
-                    chart$x$options[[z]]$series[[idxNew]]$markLine <- lstML
+                        type=chart$x$options[[t]]$series[[ns]]$type))
+                    idxNew <- length(chart$x$options[[t]]$series)
+                    chart$x$options[[t]]$series[[idxNew]]$markLine <- lstML
                     chart$x$options[[1]]$legend$data <- append(
                         chart$x$options[[1]]$legend$data, newSeries[ns]
                     )
-                    if (chart$x$options[[z]]$series[[1]]$type == 'map')
-                        chart$x$options[[z]]$series[[idxNew]]$mapType <-
-                            chart$x$options[[z]]$series[[1]]$mapType
+                    if (chart$x$options[[t]]$series[[1]]$type == 'map')
+                        chart$x$options[[t]]$series[[idxNew]]$mapType <-
+                            chart$x$options[[t]]$series[[1]]$mapType
                 }
             }
         }
@@ -3261,7 +3261,7 @@ overideML <-overideMarkLine
 #' @param series Numeric (series index) or character (series name), numeric preferred.
 #' If set NULL, then apply the \code{markPoint} to all the series.
 #' @param timeslots Numeric (timeslot index) or character (timeslot name), numeric preferred.
-#' If set NULL, then apply the \code{markPoint} to all the timeslots. You can use \code{z}
+#' If set NULL, then apply the \code{markPoint} to all the timeslots. You can use \code{t}
 #' for short.
 #' @param data Data.frame, the data of the \code{markPoint}s. It must contain the
 #' following columns: \code{\strong{name}}, and/or \code{value | type} and/or
@@ -3319,8 +3319,8 @@ addMarkPoint <- function(
     if (!inherits(chart, 'echarts'))
         stop('chart is not an Echarts object. ',
              'Check if you have missed a %>% in your pipe chain.')
-    if ('z' %in% names(list(...))) timeslots <- list(...)[['z']]
-    hasZ <- 'timeline' %in% names(chart$x)
+    if ('t' %in% names(list(...))) timeslots <- list(...)[['t']]
+    hasT <- 'timeline' %in% names(chart$x)
 
     # data validation
     if (is.null(data)) {
@@ -3361,8 +3361,8 @@ addMarkPoint <- function(
         symbol <- as.vector(validSymbols[unlist(iSymbol)])
     }
 
-    # define z
-    if (hasZ){
+    # define t
+    if (hasT){
         if (is.null(timeslots))
             timeslots <- seq_along(chart$x$options)
         else
@@ -3459,40 +3459,40 @@ addMarkPoint <- function(
             }
         }
     }else{  # with timeline
-        for (z in timeslots){
+        for (t in timeslots){
             if (length(series) >0)
-                for (s in series[[z]]){  # series is null, mono series
+                for (s in series[[t]]){  # series is null, mono series
                     dt <- if ('series' %in% names(data))
-                        data[data$series==allSeries[[z]][which(series==s)],] else data
+                        data[data$series==allSeries[[t]][which(series==s)],] else data
                     lstMP$data <- unname(apply(
                         dt, 1, .mkMPbyRow,
-                        type=chart$x$options[[z]]$series[[s]]$type))
-                    if ('markPoint' %in% names(chart$x$options[[z]]$series[[s]]))
+                        type=chart$x$options[[t]]$series[[s]]$type))
+                    if ('markPoint' %in% names(chart$x$options[[t]]$series[[s]]))
                         lstMP$data <- append(
-                            chart$x$options[[z]]$series[[s]]$markPoint$data,
+                            chart$x$options[[t]]$series[[s]]$markPoint$data,
                             lstMP$data)
-                    chart$x$options[[z]]$series[[s]]$markPoint<- lstMP
+                    chart$x$options[[t]]$series[[s]]$markPoint<- lstMP
                 }
 
             if (length(newSeries) > 0){
                 for (ns in seq_along(newSeries)){
-                    chart$x$options[[z]]$series <- append(
-                        chart$x$options[[z]]$series, list(list(
+                    chart$x$options[[t]]$series <- append(
+                        chart$x$options[[t]]$series, list(list(
                             name=newSeries[ns], data=list(list('-')),
-                            type=chart$x$options[[z]]$series[[1]]$type)))
+                            type=chart$x$options[[t]]$series[[1]]$type)))
                     dt <- if ('series' %in% names(data))
                         data[data$series==newSeries[ns],] else data
                     lstMP$data <- unname(apply(
                         dt, 1, .mkMPbyRow,
-                        type=chart$x$options[[z]]$series[[ns]]$type))
-                    idxNew <- length(chart$x$options[[z]]$series)
-                    chart$x$options[[z]]$series[[idxNew]]$markPoint <- lstMP
+                        type=chart$x$options[[t]]$series[[ns]]$type))
+                    idxNew <- length(chart$x$options[[t]]$series)
+                    chart$x$options[[t]]$series[[idxNew]]$markPoint <- lstMP
                     chart$x$options[[1]]$legend$data <- append(
                         chart$x$options[[1]]$legend$data, newSeries[ns]
                     )
-                    if (chart$x$options[[z]]$series[[1]]$type == 'map')
-                        chart$x$options[[z]]$series[[idxNew]]$mapType <-
-                            chart$x$options[[z]]$series[[1]]$mapType
+                    if (chart$x$options[[t]]$series[[1]]$type == 'map')
+                        chart$x$options[[t]]$series[[idxNew]]$mapType <-
+                            chart$x$options[[t]]$series[[1]]$mapType
                 }
             }
         }
@@ -3538,7 +3538,7 @@ overideMP <- overideMarkPoint
 #' @param chart chart \code{echarts} object generated by \code{\link{echart}} or
 #' \code{\link{echartR}}
 #' @param timeslots vector of timeslots, either name or index of timeline variable
-#' \code{z}. But you cannot use \code{z} as \code{timeslots} for short in \code{setSeries}.
+#' \code{t}.
 #' @param series series, could be the name or the index of the series. When the string
 #' is not in the existing series list, it will be treated as new
 #' @param ... The params to pass to the echarts object for modification. \cr
@@ -3777,11 +3777,11 @@ setSeries <- function(chart, series=NULL, timeslots=NULL, ...){
     validTypes <- c(
         'line', 'bar', 'scatter', 'pie', 'radar', 'chord','force', 'map', 'gauge',
         'funnel', 'eventRiver', 'treemap', 'tree', 'wordCloud', 'heatmap')
-    hasZ <- 'timeline' %in% names(chart$x)
+    hasT <- 'timeline' %in% names(chart$x)
     lst <- list(...)
 
-    # define z
-    if (hasZ){
+    # define t
+    if (hasT){
         if (is.null(timeslots))
             timeslots <- seq_along(chart$x$options)
         else
@@ -3826,15 +3826,15 @@ setSeries <- function(chart, series=NULL, timeslots=NULL, ...){
             }
         }
     }else{  # with timeline
-        for (z in timeslots){
+        for (t in timeslots){
             if (length(series) >0)
-                for (s in series[[z]]){  # series is null, mono series
+                for (s in series[[t]]){  # series is null, mono series
                     if (! 'type' %in% names(lst))
-                        type <- chart$x$options[[z]]$series[[s]]$type
+                        type <- chart$x$options[[t]]$series[[s]]$type
                     else
                         type <- match.arg(lst$type, validTypes)
-                    chart$x$options[[z]]$series[[s]] <- mergeList(
-                        chart$x$options[[z]]$series[[s]],
+                    chart$x$options[[t]]$series[[s]] <- mergeList(
+                        chart$x$options[[t]]$series[[s]],
                         filterSeriesParts(lst, type)
                     )
                 }
@@ -3843,8 +3843,8 @@ setSeries <- function(chart, series=NULL, timeslots=NULL, ...){
                 for (ns in seq_along(newSeries)){
                     if ('type' %in% names(lst)){
                         type <- match.arg(lst$type, validTypes)
-                        chart$x$options[[z]]$series <- append(
-                            chart$x$options[[z]]$series, list(
+                        chart$x$options[[t]]$series <- append(
+                            chart$x$options[[t]]$series, list(
                                 filterSeriesParts(lst, type)
                             ))
                     }

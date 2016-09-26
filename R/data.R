@@ -185,8 +185,8 @@ series_bar <- function(lst, type, subtype, return=NULL, ...){
 
 series_line = function(lst, type, subtype, return=NULL, ...) {
     # Example:
-    # g=echartr(airquality, as.character(Day), Temp,z=Month, type='curve')
-    # g=echartr(airquality, as.character(Day), Temp,z=Month, type='area_smooth')
+    # g=echartr(airquality, as.character(Day), Temp,t=Month, type='curve')
+    # g=echartr(airquality, as.character(Day), Temp,t=Month, type='area_smooth')
     lst <- mergeList(list(series=NULL), lst)
     data <- cbind(lst$y[,1], lst$x[,1])
 
@@ -329,7 +329,7 @@ series_pie <- function(lst, type, subtype, return=NULL, ...){
         data[nrow(data)+1, ] <- c('FALSE', sum.prop - data[data$x == 'TRUE',
                                                            2:ncol(data)])
     }
-    if (is.null(lst$z)){
+    if (is.null(lst$t)){
         layouts <- autoMultiPolarChartLayout(length(pies))
     }else{
         layouts <- autoMultiPolarChartLayout(length(pies), bottom=15)
@@ -446,7 +446,7 @@ series_radar <- function(lst, type, subtype, return=NULL, ...){
     # echartr(cars, c(indicator, model), Parameter, type='target') %>%
     #         setSymbols('none')
     #
-    # echartr(cars, indicator, Parameter, z=model, type='radar')
+    # echartr(cars, indicator, Parameter, t=model, type='radar')
     # ----------------
     #
     # carstat = data.table::dcast(data.table::data.table(mtcars),
@@ -461,7 +461,7 @@ series_radar <- function(lst, type, subtype, return=NULL, ...){
     #             levels(carstat$am), unique(carstat$carb)))
     # carstat <- merge(fullData, carstat, all.x=TRUE)
     # echartr(carstat, c(indicator, am),
-    #         Parameter, carb, z=gear, type='radar')
+    #         Parameter, carb, t=gear, type='radar')
 
     # x[,1] is x, x[,2] is series; y[,1] is y; series[,1] is polorIndex
     if (is.null(lst$y) || is.null(lst$x)) stop('radar charts need x and y!')
@@ -723,7 +723,7 @@ series_map <- function(lst, type, subtype, return=NULL, ...){
 
     #layouts
     if (mode=='split'){
-        if (is.null(lst$z)){
+        if (is.null(lst$t)){
             layouts <- autoMultiPolarChartLayout(nSeries, col.max=4)
         }else{
             layouts <- autoMultiPolarChartLayout(nSeries, bottom=15, col.max=4)
@@ -1027,71 +1027,4 @@ series_heatmap <- function(lst, type, subtype, return=NULL, ...){
     }else{
         return(o[intersect(names(o), return)])
     }
-}
-
-#---------------------------legacy functions-----------------------------------
-# split the data matrix for a scatterplot by series
-data_scatter = function(x, y, series = NULL, type = 'scatter') {
-  xy = unname(cbind(x, y))
-  if (is.null(series)) return(list(list(type = type, data = xy)))
-  xy = split(as.data.frame(xy), series)
-  nms = names(xy)
-  obj = list()
-  for (i in seq_along(xy)) {
-    obj[[i]] = list(name = nms[i], type = type, data = unname(as.matrix(xy[[i]])))
-  }
-  obj
-}
-
-data_bar = function(x, y, series = NULL, type = 'bar') {
-
-  # plot the frequencies of x when y is not provided
-  if (is.null(y)) {
-
-    if (is.null(series)) {
-      y = table(x)
-      return(list(list(type = type, data = unname(c(y)))))
-    }
-
-    y = table(x, series)
-    nms = colnames(y)
-    obj = list()
-    for (i in seq_len(ncol(y))) {
-      obj[[i]] = list(name = nms[i], type = type, data = unname(y[, i]))
-    }
-    return(obj)
-
-  }
-
-  # when y is provided, use y as the height of bars
-  if (is.null(series)) {
-    return(list(list(type = type, data = y)))
-  }
-
-  xy = tapply(y, list(x, series), function(z) {
-    if (length(z) == 1) return(z)
-    stop('y must only have one value corresponding to each combination of x and series')
-  })
-  xy[is.na(xy)] = 0
-  nms = colnames(xy)
-  obj = list()
-  for (i in seq_len(ncol(xy))) {
-    obj[[i]] = list(name = nms[i], type = type, data = unname(xy[, i]))
-  }
-  obj
-
-}
-
-data_line = function(x, y, series = NULL) {
-  if (is.null(x) && is.ts(y)) {
-    x = as.numeric(time(y))
-    y = as.numeric(y)
-  }
-  if (is.numeric(x)) {
-    return(data_scatter(x, y, series, type = 'line'))
-  }
-  if (is.null(series)) {
-    return(list(list(type = 'line', data = y)))
-  }
-  data_bar(x, y, series, type = 'line')
 }

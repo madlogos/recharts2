@@ -2,11 +2,13 @@
 #'
 #' Create an HTML widget for ECharts that can be rendered in the R console, R
 #' Markdown documents, or Shiny apps. You can add more components to this widget
-#' and customize options later. \code{eChart()} is an alias of \code{echart()}.
+#' and customize options later using <setEchartWidgets> functions, <aesthetic>
+#' functions, and others.. \code{eChart()} is an alias of \code{echart()}.
+#'
 #' @param data a data object (usually a data frame or a list)
 #' @rdname eChart
 #' @export
-#' @examples library(recharts)
+#' @examples library(recharts2)
 #' echart(iris, ~ Sepal.Length, ~ Sepal.Width)
 #' echart(iris, ~ Sepal.Length, ~ Sepal.Width, series = ~ Species)
 echart = function(data, ...) {
@@ -23,75 +25,13 @@ echart = function(data, ...) {
 echart.list = function(data, width = NULL, height = NULL,  ...) {
     htmlwidgets::createWidget(
         'echarts', x = data, width = width, height = height,
-        package = 'recharts'
+        package = 'recharts2'
     )
 }
 
 #' Create an ECharts widget
 #'
 #' echart method for data.frame
-#' @param x the x variable
-#' @param y the y variable
-#' @param series series
-#' @param type type, default 'auto'
-#' @export
-#'
-#' @rdname eChart
-echart.data.frame = function(
-    data = NULL, x = NULL, y = NULL, series = NULL, type = 'auto',
-    width = NULL, height = NULL, ...
-) {
-
-    xlab = autoArgLabel(x, deparse(substitute(x)))
-    ylab = autoArgLabel(y, deparse(substitute(y)))
-
-    x = evalFormula(x, data)
-    y = evalFormula(y, data)
-    if (type == 'auto') type = determineType(x, y)
-    if (type == 'bar') {
-        x = as.factor(x)
-        if (is.null(y)) ylab = 'Frequency'
-    }
-
-    series = evalFormula(series, data)
-    data_fun = getFromNamespace(paste0('data_', type), 'recharts')
-
-    params = structure(list(
-        series = data_fun(x, y, series),
-        xAxis = list(), yAxis = list()
-    ), meta = list(
-        x = x, y = y
-    ))
-
-    if (!is.null(series)) {
-        params$legend = list(data = levels(as.factor(series)))
-    }
-
-    chart = htmlwidgets::createWidget(
-        'echarts', x = params, width = width, height = height,
-        package = 'recharts', dependencies = getDependency(type)
-    )
-
-    chart %>% eAxis('x', name = xlab) %>% eAxis('y', name = ylab)
-
-}
-
-#' @export
-#' @rdname eChart
-echart.default = echart.data.frame
-
-#' @export
-#' @rdname eChart
-eChart = echart
-# from the planet of "Duo1 Qiao1 Yi1 Ge4 Jian4 Hui4 Si3" (will die if having to
-# press one more key, i.e. Shift in this case)
-
-#' Framework Function to Create An Echarts Object
-#'
-#' This function is used to produce the skeleton of an Echarts object with default settings.
-#' You can then tune the settings using <setEchartWidgets> functions, <aesthetic> functions,
-#' and others.
-#' @param data data.frame.
 #' @param x independent variable(s). Some charts calls for one, some calls for two.
 #' @param y dependent variable(s). Most charts calls for one, but some calls for more.
 #' @param series data series variables.
@@ -103,31 +43,33 @@ eChart = echart
 #'   some other charts (map, tree, ...), series represents index of coordinate system.
 #'   Different coordinate system indices are displayed in paralell coordinate systems.}
 #' }
+#' @param t timeline variable. When \code{t} is defined, recharts2 builds a timeline
+#' widget to show the changes along with time.
 #' @param weight In some charts (bar, bubble, line, ...), weight represents the size
 #' of the graph elements.
-#' @param z timeline variable. When \code{z} is defined, recharts builds a timeline
-#' widget to show the changes along with time.
+#' @param facet The variable as factor mapping to facets.
 #' @param lat latitude variable (-180 ~ 180) for map/heatmap
 #' @param lng longitude variable (-90 ~ 90) for map/heatmap
-#' @param type chart type. Now recharts supports major types of
+#' @param type chart type. Now recharts2 supports major types of
 #' \itemize{
-#'   \item \href{http://madlogos.github.io/recharts/Basic_Plots_01_Scatterplot.html}{scatter/point/bubble}
-#'   \item \href{http://madlogos.github.io/recharts/Basic_Plots_02_Bar.html}{bar/column/histogram}
-#'   \item \href{http://madlogos.github.io/recharts/Basic_Plots_03_Line.html}{line/area/curve/wave}
-#'   \item \href{http://madlogos.github.io/recharts/Basic_Plots_04_K.html}{candlestick/k}
-#'   \item \href{http://madlogos.github.io/recharts/Basic_Plots_05_eventRiver.html}{eventRiver}
-#'   \item \href{http://madlogos.github.io/recharts/Basic_Plots_21_Pie.html}{pie/ring/rose}
-#'   \item \href{http://madlogos.github.io/recharts/Basic_Plots_22_Funnel.html}{funnel/pyramid}
-#'   \item \href{http://madlogos.github.io/recharts/Basic_Plots_23_Radar.html}{radar/spider/star}
-#'   \item \href{http://madlogos.github.io/recharts/Basic_Plots_11_Force.html}{force/force_line}
-#'   \item \href{http://madlogos.github.io/recharts/Basic_Plots_12_Chord.html}{chord}
-#'   \item \href{http://madlogos.github.io/recharts/Basic_Plots_24_Gauge.html}{gauge}
-#'   \item \href{http://madlogos.github.io/recharts/Basic_Plots_13_WordCloud.html}{wordCloud}
-#'   \item \href{http://madlogos.github.io/recharts/Basic_Plots_14_Venn.html}{venn}
-#'   \item \href{http://madlogos.github.io/recharts/Basic_Plots_31_Map.html}{map_world/map_china/map_world_multi/map_china_multi}
-#'   \item \href{http://madlogos.github.io/recharts/Basic_Plots_32_Tree.html}{tree/htree/tree_inv/htree_inv}
-#'   \item \href{http://madlogos.github.io/recharts/Basic_Plots_33_Treemap.html}{treemap}
-#'   \item \href{http://madlogos.github.io/recharts/Basic_Plots_15_Heatmap.html}{heatmap}
+#'   \item \href{http://madlogos.github.io/recharts2/Basic_Plots_01_Scatterplot.html}{scatter/point/bubble}
+#'   \item \href{http://madlogos.github.io/recharts2/Basic_Plots_02_Bar.html}{bar/column/histogram}
+#'   \item \href{http://madlogos.github.io/recharts2/Basic_Plots_03_Line.html}{line/area/curve/wave}
+#'   \item \href{http://madlogos.github.io/recharts2/Basic_Plots_04_K.html}{candlestick/k}
+#'   \item \href{http://madlogos.github.io/recharts2/Basic_Plots_05_eventRiver.html}{eventRiver}
+#'   \item \href{http://madlogos.github.io/recharts2/Basic_Plots_06_boxplot.html}{boxplot}
+#'   \item \href{http://madlogos.github.io/recharts2/Basic_Plots_21_Pie.html}{pie/ring/rose}
+#'   \item \href{http://madlogos.github.io/recharts2/Basic_Plots_22_Funnel.html}{funnel/pyramid}
+#'   \item \href{http://madlogos.github.io/recharts2/Basic_Plots_23_Radar.html}{radar/spider/star}
+#'   \item \href{http://madlogos.github.io/recharts2/Basic_Plots_11_Force.html}{force/force_line}
+#'   \item \href{http://madlogos.github.io/recharts2/Basic_Plots_12_Chord.html}{chord}
+#'   \item \href{http://madlogos.github.io/recharts2/Basic_Plots_24_Gauge.html}{gauge}
+#'   \item \href{http://madlogos.github.io/recharts2/Basic_Plots_13_WordCloud.html}{wordCloud}
+#'   \item \href{http://madlogos.github.io/recharts2/Basic_Plots_14_Venn.html}{venn}
+#'   \item \href{http://madlogos.github.io/recharts2/Basic_Plots_31_Map.html}{map_world/map_china/map_world_multi/map_china_multi}
+#'   \item \href{http://madlogos.github.io/recharts2/Basic_Plots_32_Tree.html}{tree/htree/tree_inv/htree_inv}
+#'   \item \href{http://madlogos.github.io/recharts2/Basic_Plots_33_Treemap.html}{treemap}
+#'   \item \href{http://madlogos.github.io/recharts2/Basic_Plots_15_Heatmap.html}{heatmap}
 #' }
 #' @param subtype some chart types support subtypes.
 #' \describe{
@@ -150,21 +92,24 @@ eChart = echart
 #'   "dotted","solid","dashed")}
 #'   \item{radar/spider/star}{"fill"}
 #' }
-#' @param ...
+#' @param ... Other params to pass to echarts object
 #'
 #' @export
 #' @references
-#' Online Manual: \url{http://madlogos.github.io/recharts}
-echartr = function(
-    data, x = NULL, y = NULL, series = NULL, weight = NULL, z = NULL,
-    lat = NULL, lng = NULL, type = 'auto', subtype = NULL, ...
-) {
+#' Online Manual: \url{http://madlogos.github.io/recharts2}
+
+#' @export
+#' @rdname eChart
+echart.data.frame = function(
+    data, x = NULL, y = NULL, series = NULL, t = NULL, weight = NULL,
+    facet = NULL, lat = NULL, lng = NULL, type = 'auto', subtype = NULL,
+...) {
     options(encoding="native.enc")
     if (is.null(data)){
         data <- data.frame(x='', stringsAsFactors=FALSE)
         dataVars <- list('x')
         xvarRaw <- 'x'
-        hasZ <- FALSE
+        hasT <- FALSE
         xlab <- ylab <- ''
     }else{
         lapply(seq_along(names(data)), function(j){
@@ -175,8 +120,9 @@ echartr = function(
 
         #------------- get all arguments as a list-----------------
         vArgs <- as.list(match.call(expand.dots=TRUE))
-        dataVars <- intersect(names(vArgs),
-                              c('x', 'y', 'z', 'series', 'weight', 'lat', 'lng'))
+        dataVars <- intersect(
+            names(vArgs), c(
+                'x', 'y', 't', 'series', 'weight', 'facet', 'lat', 'lng'))
         vArgsRaw <- vArgs[dataVars]  # original arg names
         vArgs <- lapply(vArgsRaw, function(v) {
             symbols = all.names(v)
@@ -193,7 +139,7 @@ echartr = function(
                                sapply(vArgsRaw, deparse), ", data, eval=FALSE)")))
         eval(parse(text=paste0(names(vArgsRaw), " <- evalVarArg(",
                                sapply(vArgsRaw, deparse), ", data)")))
-        hasZ <- ! is.null(z)
+        hasT <- ! is.null(t)
         if (!is.null(series))
             for (i in seq_along(seriesvar))
                 if (!is.factor(data[,seriesvar[i]]))
@@ -213,37 +159,37 @@ echartr = function(
     # -------------split multi-timeline df to lists-----------
 
     .makeMetaDataList <- function(df) {
-         vars <- sapply(dataVars, function(x) {
-             eval(parse(text=paste0(x, 'varRaw')))}, simplify=TRUE)
-         if (!is.null(dim(vars)))
-             vars <- paste0(
-                 'c(',apply(vars, 2, function(x) paste(x, collapse=',')), ')')
-         assignment <- paste0(dataVars, " = evalVarArg(", vars, ", ",
+        vars <- sapply(dataVars, function(x) {
+            eval(parse(text=paste0(x, 'varRaw')))}, simplify=TRUE)
+        if (!is.null(dim(vars)))
+            vars <- paste0(
+                'c(',apply(vars, 2, function(x) paste(x, collapse=',')), ')')
+        assignment <- paste0(dataVars, " = evalVarArg(", vars, ", ",
                              substitute(df, parent.frame()), ")")
         # assignment <- paste0(dataVars, " = evalVarArg(", vArgsRaw[dataVars], ", ",
         #                      substitute(df, parent.frame()), ")")
         eval(parse(text=paste0("list(", paste(assignment, collapse=", "), ")")))
     }
-    if (hasZ){
-        uniZ <- unique(z[,1])
-        if (is.factor(uniZ)) uniZ <- as.character(uniZ)
-        zSize <- unique(table(data[,zvar]))
+    if (hasT){
+        uniT <- unique(t[,1])
+        if (is.factor(uniT)) uniT <- as.character(uniT)
+        tSize <- unique(table(data[,tvar]))
 
-        # timeslices not in equal size across z, suppl it
-        if (length(zSize) > 1 && is.character(x[,1])) {
-            expandData <- data.frame(expand.grid(unique(x[,1]), unique(z[,1]),
+        # timeslices not in equal size across t, suppl it
+        if (length(tSize) > 1 && is.character(x[,1])) {
+            expandData <- data.frame(expand.grid(unique(x[,1]), unique(t[,1]),
                                                  stringsAsFactors=FALSE))
-            names(expandData) <- c(xvar[1], zvar[1])
+            names(expandData) <- c(xvar[1], tvar[1])
             data <- merge(expandData, data, all.x=TRUE, sort=FALSE)
-            data <- data[order(data[,zvar[1]]),]
+            data <- data[order(data[,tvar[1]]),]
         }
 
-        dataByZ <- split(data, as.factor(data[,zvar[1]]))
-        metaData <- lapply(dataByZ, .makeMetaDataList)
-        names(metaData) <- uniZ
-        if (! identical(unique(z[,1]), sort(unique(z[,1]))) &&
-            ! identical(unique(z[,1]), sort(unique(z[,1]), TRUE)))
-            warning("z is not in order, the chart may not show properly!")
+        dataByT <- split(data, as.factor(data[,tvar[1]]))
+        metaData <- lapply(dataByT, .makeMetaDataList)
+        names(metaData) <- uniT
+        if (! identical(unique(t[,1]), sort(unique(t[,1]))) &&
+            ! identical(unique(t[,1]), sort(unique(t[,1]), TRUE)))
+            warning("t is not in order, the chart may not show properly!")
     }else{
         metaData <- .makeMetaDataList(data)
     }
@@ -274,12 +220,12 @@ echartr = function(
             stop('When type is "map", geoJSON file must be provided in subtype')
         }else{
             if (grep('.+[Jj][Ss][Oo][Nn]$', subtype) > 1)
-                warning('echartr only accepts the first geoJSON file.')
+                warning('echart only accepts the first geoJSON file.')
             geoJSON <- subtype[grep('.+[Jj][Ss][Oo][Nn]$', subtype)][1]
             con <- system.file('htmlwidgets/lib/echarts/ext/loadGeoJSON.js',
-                               package='recharts')
+                               package='recharts2')
             paramPath <- system.file('htmlwidgets/lib/echarts/ext',
-                                     package='recharts')
+                                     package='recharts2')
             if (file.exists(con)){
                 writeLines(paste0(
                     "require('", paramPath, "/param').params.newmap = { ",
@@ -306,7 +252,7 @@ echartr = function(
         typeIdx <- unname(which(dfType))
     }else{
         typeIdx <- unname(unlist(sapply(seq_len(nrow(dfType)),
-                                 function(i) which(dfType[i,]))))
+                                        function(i) which(dfType[i,]))))
     }
     dfType <- validChartTypes[typeIdx,]
     lstSubtype <- rep('', length(type))
@@ -329,7 +275,7 @@ echartr = function(
                  grepl("^(funnel|pie)", dfType$type) ||
                  grepl("^(force|chord)", dfType$type) ||
                  grepl("^(tree|treemap)", dfType$type)))
-            stop(paste("recharts does not support such mixed types yet."))
+            stop(paste("recharts2 does not support such mixed types yet."))
     }
 
     # if (nlevels(as.factor(dfType$xyflip)) > 1)
@@ -337,12 +283,12 @@ echartr = function(
     #                   dfType[, "xyflip"]))
 
     # ---------------------------params list----------------------
-    .makeSeriesList <- function(z){  # each timeline create a options list
+    .makeSeriesList <- function(t){  # each timeline create a options list
         #browser()
         series_fun = getFromNamespace(paste0('series_', dfType$type[1]),
-                                    'recharts')
+                                      'recharts2')
 
-        if (is.null(z)){  # no timeline
+        if (is.null(t)){  # no timeline
             time_metaData = lapply(metaData, function(df){
                 data.frame(lapply(df, function(col) {
                     if (inherits(col, c("Date", "POSIXlt", "POSIXlt")))
@@ -362,21 +308,21 @@ echartr = function(
                 })
             })
             out <- structure(list(
-                series = series_fun(time_metaData[[z]], type=dfType,
+                series = series_fun(time_metaData[[t]], type=dfType,
                                     subtype=lstSubtype, fullMeta=metaData)
-            ), meta = metaData[[z]])
+            ), meta = metaData[[t]])
         }
 
         return(out)
     }
 
-    if (hasZ){  ## has timeline
+    if (hasT){  ## has timeline
         params = list(
-            timeline=structure(list(), sliceby=zvar),
-            options=lapply(1:length(uniZ), .makeSeriesList)
+            baseOption=list(timeline=structure(list(), sliceby=tvar)),
+            options=lapply(1:length(uniT), .makeSeriesList)
         )
         if (!is.null(series))
-            params$options[[1]]$legend <- list(
+            params$baseOption$legend <- list(
                 data = as.list(levels(as.factor(series[,1])))
             )
     }else{
@@ -389,12 +335,15 @@ echartr = function(
 
     # -------------------output-------------------------------
     chart = htmlwidgets::createWidget(
-        'echarts', params, width = NULL, height = NULL, package = 'recharts',
-        dependencies = lapply(c('base', unique(dfType$type)), getDependency)
+        'echarts', params, width = NULL, height = NULL, package = 'recharts2',
+        dependencies = lapply(c(
+            'echarts.min'),
+            getDependency)
     )
 
-    if (hasZ)
-        chart <- chart %>% setTimeline(show=TRUE, data=uniZ)
+
+    if (hasT)
+        chart <- chart %>% setTimeline(show=TRUE, data=uniT)
     if (!is.null(geoJSON)) chart$geoJSON <- geoJSON
 
     if (any(dfType$type %in% c('map'))){
@@ -402,7 +351,8 @@ echartr = function(
     }else if (any(dfType$type %in% c('heatmap'))){
         chart <- chart %>% setXAxis(show=FALSE) %>% setYAxis(show=FALSE) %>%
             setGrid(borderWidth=0)
-    }else if (any(dfType$type %in% c('line', 'bar', 'scatter', 'k', 'eventRiver'))){
+    }else if (any(dfType$type %in% c(
+        'line', 'bar', 'scatter', 'candlestick', 'eventRiver'))){
         if (!any(dfType$type %in% c('eventRiver')))
             chart <- chart %>% setYAxis(name = ylab[[1]])
         chart <- chart %>% setXAxis(name = xlab[[1]]) %>%
@@ -418,8 +368,13 @@ echartr = function(
 }
 
 #' @export
-#' @rdname echartr
-echartR <- echartr
+#' @rdname eChart
+echart.default = echart.data.frame
+
+#' @export
+#' @rdname eChart
+eChart = echart
+
 
 determineType = function(x, y) {
     if (is.numeric(x) && is.numeric(y)) return('scatter')
@@ -439,12 +394,12 @@ determineType = function(x, y) {
     stop('Unable to determine the chart type from x and y automatically')
 }
 
-# not usable yet; see https://github.com/ecomfe/echarts/issues/1065
+
 getDependency = function(type) {
     if (is.null(type)) return()
     htmltools::htmlDependency(
         'echarts-module', EChartsVersion,
-        src = system.file('htmlwidgets/lib/echarts', package = 'recharts'),
+        src = system.file('htmlwidgets/lib/echarts', package = 'recharts2'),
         script = sprintf('%s.js', type)
     )
 }

@@ -1043,13 +1043,13 @@ getJSElementSize <- function(chart, element=c('width', 'height')){
 vecPos <- function(pos){
     TblPos=as.data.frame(rbind(c("right",  "top",    "horizontal"),
                                c("right",  "top",    "vertical"),
-                               c("right",  "center", "vertical"),
+                               c("right",  "middle", "vertical"),
                                c("right",  "bottom", "vertical"),
                                c("right",  "bottom", "horizontal"),
                                c("center", "bottom", "horizontal"),
                                c("left",   "bottom", "horizontal"),
                                c("left",   "bottom", "vertical"),
-                               c("left",   "center", "vertical"),
+                               c("left",   "middle", "vertical"),
                                c("left",   "top",    "vertical"),
                                c("left",   "top",    "horizontal"),
                                c("center", "top",    "horizontal")
@@ -1061,7 +1061,7 @@ vecPos <- function(pos){
 
 
 #' @param x String, 'left', 'right' or 'center'
-#' @param y String, 'top', 'center' or 'vertical'
+#' @param y String, 'top', 'middle' or 'vertical'
 #' @param orient String, 'horizontal' or 'vertical'
 #'
 #' @return A clock digit number
@@ -1075,13 +1075,13 @@ vecPos <- function(pos){
 clockPos <- function(x, y, orient){
     TblPos=as.data.frame(rbind(c("right",  "top",    "horizontal"),
                                c("right",  "top",    "vertical"),
-                               c("right",  "center", "vertical"),
+                               c("right",  "middle", "vertical"),
                                c("right",  "bottom", "vertical"),
                                c("right",  "bottom", "horizontal"),
                                c("center", "bottom", "horizontal"),
                                c("left",   "bottom", "horizontal"),
                                c("left",   "bottom", "vertical"),
-                               c("left",   "center", "vertical"),
+                               c("left",   "middle", "vertical"),
                                c("left",   "top",    "vertical"),
                                c("left",   "top",    "horizontal"),
                                c("center", "top",    "horizontal")
