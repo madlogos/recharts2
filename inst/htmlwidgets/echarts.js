@@ -14,20 +14,12 @@ HTMLWidgets.widget({
 
 
   renderValue: function(el, x, instance) {
-    if (typeof x.BMap != 'undefined') {  //BMap: give up...
-        var BMapExt = new BMapExtension(x.ElementId, BMap, require('echarts'));
-        var Bmap = BMapExt.getMap();
-        //Bmap.centerAndZoom(Bmap.Point(startPoint.x, startPoint.y), 5);
-        Bmap.enableScrollWheelZoom(true);
-        var BmapContainer = BMapExt.getEchartsContainer();
-        instance = BMapExt.initEcharts(BmapContainer);
-    }    
-    if (typeof(x.theme) != 'undefined') { 
+    if (typeof(x.theme) != 'undefined') {
 		if (['dark','infographic','macarons','roma','shine','vintage'].indexOf(x.theme) !== -1) {
 			instance = echarts.init(el, x.theme);
 		}
 	}
-    
+
 	instance.setOption(x, true);
   },
 

@@ -333,10 +333,21 @@ echart.data.frame = function(
             )
     }
 
+    # ------------------dependency js------------------------
+    depJS <- list()
+    if (any(grepl('map_world|world_map', dfType$name)))
+        depJS <- append(depJS, list(
+            getDependency('world', 'htmlwidgets/lib/echarts/geo')))
+    mapJSName <- c(mapShapeJS[,2][mapShapeJS[,1] %in% unlist(subtype)],
+                   mapShapeJS[,2][mapShapeJS[,2] %in% unlist(subtype)])
+    if (length(mapJSName) > 0)
+        depJS <- append(depJS, lapply(mapJSName, getDependency,
+                                      src='htmlwidgets/lib/echarts/geo'))
+
     # -------------------output-------------------------------
     chart = htmlwidgets::createWidget(
         'echarts', params, width = NULL, height = NULL, package = 'recharts2',
-        dependencies = NULL, preRenderHook = function(instance) { instance }
+        dependencies = depJS, preRenderHook = function(instance) { instance }
     )
 
 
@@ -393,11 +404,11 @@ determineType = function(x, y) {
 }
 
 
-getDependency = function(type) {
+getDependency = function(type, src='htmlwidgets/lib/echarts') {
     if (is.null(type)) return()
     htmltools::htmlDependency(
         'echarts-module', EChartsVersion,
-        src = system.file('htmlwidgets/lib/echarts', package = 'recharts2'),
+        src = system.file(src, package = 'recharts2'),
         script = sprintf('%s.js', type)
     )
 }
