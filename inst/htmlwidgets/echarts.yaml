@@ -2,13 +2,12 @@ dependencies:
   - name: echarts
     version: 3.2.3
     src: "htmlwidgets/lib/echarts"
-    script:
-      - echarts.min.js
-      - geo/china.js
-      - geo/world.js
-      - theme/dark.js
-      - theme/infographic.js
-      - theme/macarons.js
-      - theme/roma.js
-      - theme/shine.js
-      - theme/vintage.js
+    script: echarts.min.js
+  - name: echarts_theme
+    version: 3.2.3
+    src: "htmlwidgets/lib/echarts/theme"
+    script: [dark.js, infographic.js, macarons.js, roma.js, shine.js, vintage.js]
+  - name: echarts_geo
+    version: 3.2.3
+    src: "htmlwidgets/lib/echarts/geo"
+    script: [china.js, anhui.js, aomen.js, beijing.js, chongqing.js, fujian.js, gansu.js, guangdong.js, guangxi.js, guizhou.js, hainan.js, hebei.js, heilongjiang.js, henan.js, hubei.js, hunan.js, jiangsu.js, jiangxi.js, jilin.js, liaoning.js, neimenggu.js, ningxia.js, qinghai.js, shandong.js, shanghai.js, shanxi.js, shanxi1.js, sichuan.js, tianjin.js, world.js, xianggang.js, xinjiang.js, xizang.js, yunnan.js, zhejiang.js]
