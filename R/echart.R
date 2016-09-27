@@ -336,9 +336,7 @@ echart.data.frame = function(
     # -------------------output-------------------------------
     chart = htmlwidgets::createWidget(
         'echarts', params, width = NULL, height = NULL, package = 'recharts2',
-        dependencies = lapply(c(
-            'echarts.min'),
-            getDependency)
+        dependencies = NULL, preRenderHook = function(instance) { instance }
     )
 
 

@@ -30,26 +30,46 @@ evalVarArg <- function(x, data, simplify=FALSE, eval=TRUE){
     ## evalVarArg(c(as.numeric(Species), Sepal.Width), iris)
     ## evalVarArg(c(as.numeric(Species)+1, Sepal.Width), iris)
 
-    # coerce x to formula
-    x <- arg1 <- deparse(substitute(x))
-    x <- gsub('^\\"(.*)\\"$' , '\\1', x)
-    x <- as.formula(ifelse(grepl("^~", x), x, paste('~', x)))
+    # character, don't coerce; otherwise, coerce to formula
 
-    # split x if it is packed in a list/ vector
-    if (! grepl('^(c|list|data\\.frame)\\(', deparse(substitute(x)[[2]])))
-        x <- deparse(substitute(x)[[2]])  # a string
-    else
-        x <- as.character(parse(text=x[[2]]))  # a vector
-      ## each element in x --> formula
-    #browser()
-    x[! grepl("^~", x)] <- paste('~', x[! grepl("^~", x)])
-    x <- as.vector(sapply(x, as.formula))
+    # coerce x to formula if is symbol
+    if (length(substitute(x)) > 1){
+        if (as.character(substitute(x)[[1]]) %in% c(
+            'c', 'list', 'data.frame', 'vector', 'matrix')){
+            x <- arg1 <- as.list(substitute(x))
+        }else if (as.character(substitute(x)[[1]] == '~')){
+            if (grepl('^c|list|data\\.frame|vector|matrix\\(',
+                      deparse(substitute(x)[[2]]))){
+                x <- arg1 <- as.list(substitute(x)[[2]])
+                x <- arg1 <- x[2:length(x)]
+            }else{
+                x <- arg1 <- as.list(substitute(x))
+            }
+        }else{
+            x <- arg1 <- list(substitute(x))
+        }
+    }else{
+        x <- arg1 <- list(substitute(x))
+    }
+
+    for (i in seq_along(x)) {
+        if (is.character(x[[i]]))
+            x[[i]] <- sub('^\\"(.*)\\"$' , '\\1', x[[i]])
+        else {
+            if (is.symbol(x[[i]]) || is.language(x[[i]])){
+                if (as.character(x[[i]] != '~'))
+                    x[[i]] <- as.formula(paste('~', deparse(x[[i]])))
+            }
+        }
+    }
+    arg1 <- arg1[! (x %in% c(~c, ~list, ~data.frame) | as.character(x) == '`~`')]
+    x <- x[! (x %in% c(~c, ~list, ~data.frame) | as.character(x) == '`~`')]
 
     # loop evalVar() and filter valid data.frame
     out <- sapply(x, evalVar, data=data, simplify=FALSE)
     nrows <- sapply(out, length)
-    out <- out[names(nrows)[nrows==nrow(data)]]
-    names <- names(x)
+    out <- out[nrows==nrow(data)]
+    names <- as.character(arg1)
     names <- names[nrows==nrow(data)]
     names <- gsub("^ *~ *(.*)$|^c\\((.*)\\)$", "\\1", names)
     out <- as.data.frame(out, stringsAsFactors=FALSE)
