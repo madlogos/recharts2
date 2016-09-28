@@ -104,12 +104,13 @@ echart.data.frame = function(
     data, x = NULL, y = NULL, series = NULL, t = NULL, weight = NULL,
     facet = NULL, lat = NULL, lng = NULL, type = 'auto', subtype = NULL,
 ...) {
-    options(encoding="native.enc")
+
     if (is.null(data)){
         data <- data.frame(x='', stringsAsFactors=FALSE)
         dataVars <- list('x')
         xvarRaw <- 'x'
         hasT <- FALSE
+        hasF <- FALSE
         xlab <- ylab <- ''
     }else{
         lapply(seq_along(names(data)), function(j){
@@ -140,6 +141,12 @@ echart.data.frame = function(
         eval(parse(text=paste0(names(vArgsRaw), " <- evalVarArg(",
                                sapply(vArgsRaw, deparse), ", data)")))
         hasT <- ! is.null(t)
+        hasF <- ! is.null(facet)
+        if (!is.null(facet)){
+            for (i in seq_along(facetvar))
+                if (!is.factor(data[,facetvar[i]]))
+                    data[,facetvar[i]] = as.factor(data[,facet[i]])
+        }
         if (!is.null(series))
             for (i in seq_along(seriesvar))
                 if (!is.factor(data[,seriesvar[i]]))
@@ -151,13 +158,12 @@ echart.data.frame = function(
         if (!missing(y)) ylab = as.character(vArgsRaw$y) else ylab = "Freq"
         xlab = sapply(xlab, autoArgLabel, auto=deparse(substitute(xvar)))
         ylab = sapply(ylab, autoArgLabel, auto=deparse(substitute(xvar)))
-        xlab <- gsub("^\"|\"$", "", xlab)
-        ylab <- gsub("^\"|\"$", "", ylab)
+        xlab = gsub("^\"|\"$", "", xlab)
+        ylab = gsub("^\"|\"$", "", ylab)
         if (length(ylab) == 0) ylab = "Freq"
     }
 
     # -------------split multi-timeline df to lists-----------
-
     .makeMetaDataList <- function(df) {
         vars <- sapply(dataVars, function(x) {
             eval(parse(text=paste0(x, 'varRaw')))}, simplify=TRUE)
@@ -213,7 +219,7 @@ echart.data.frame = function(
         type <- c(type, rep(type[length(type)], nSeries-length(type)))
     }
 
-    ## special: geoJSON map, not working
+    ## special: geoJSON map, -- not working
     geoJSON <- NULL
     if (any(type == 'map'))
         if (all(! grep('.+[Jj][Ss][Oo][Nn]$', subtype))) {
@@ -246,7 +252,7 @@ echart.data.frame = function(
         }
 
     ## type is converted to a data.frame, colnames:
-    ## [id name type stack smooth mapType mapMode misc]
+    ## [id name type subtype misc coordSys]
     dfType <- sapply(validChartTypes$name, function(x) grepl(x, type))
     if (is.null(dim(dfType))){
         typeIdx <- unname(which(dfType))
@@ -338,8 +344,8 @@ echart.data.frame = function(
     if (any(grepl('map_world|world_map', dfType$name)))
         depJS <- append(depJS, list(
             getDependency('world', 'htmlwidgets/lib/echarts/geo')))
-    mapJSName <- c(mapShapeJS[,2][mapShapeJS[,1] %in% unlist(subtype)],
-                   mapShapeJS[,2][mapShapeJS[,2] %in% unlist(subtype)])
+    mapJSName <- unique(c(mapShapeJS[,2][mapShapeJS[,1] %in% unlist(subtype)],
+                   mapShapeJS[,2][mapShapeJS[,2] %in% unlist(subtype)]))
     if (length(mapJSName) > 0)
         depJS <- append(depJS, lapply(mapJSName, getDependency,
                                       src='htmlwidgets/lib/echarts/geo'))
