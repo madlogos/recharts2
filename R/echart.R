@@ -17,7 +17,6 @@ echart = function(data, ...) {
 
 #' Create an ECharts widget
 #'
-#' echart method for list
 #' @param width width
 #' @param height height
 #' @export
@@ -31,7 +30,6 @@ echart.list = function(data, width = NULL, height = NULL,  ...) {
 
 #' Create an ECharts widget
 #'
-#' echart method for data.frame
 #' @param x independent variable(s). Some charts calls for one, some calls for two.
 #' @param y dependent variable(s). Most charts calls for one, but some calls for more.
 #' @param series data series variables.
@@ -55,7 +53,7 @@ echart.list = function(data, width = NULL, height = NULL,  ...) {
 #'   \item \href{http://madlogos.github.io/recharts2/Basic_Plots_01_Scatterplot.html}{scatter/point/bubble}
 #'   \item \href{http://madlogos.github.io/recharts2/Basic_Plots_02_Bar.html}{bar/column/histogram}
 #'   \item \href{http://madlogos.github.io/recharts2/Basic_Plots_03_Line.html}{line/area/curve/wave}
-#'   \item \href{http://madlogos.github.io/recharts2/Basic_Plots_04_K.html}{candlestick/k}
+#'   \item \href{http://madlogos.github.io/recharts2/Basic_Plots_04_K.html}{candlestick}
 #'   \item \href{http://madlogos.github.io/recharts2/Basic_Plots_05_eventRiver.html}{eventRiver}
 #'   \item \href{http://madlogos.github.io/recharts2/Basic_Plots_06_boxplot.html}{boxplot}
 #'   \item \href{http://madlogos.github.io/recharts2/Basic_Plots_21_Pie.html}{pie/ring/rose}
@@ -121,9 +119,8 @@ echart.data.frame = function(
 
         #------------- get all arguments as a list-----------------
         vArgs <- as.list(match.call(expand.dots=TRUE))
-        dataVars <- intersect(
-            names(vArgs), c(
-                'x', 'y', 't', 'series', 'weight', 'facet', 'lat', 'lng'))
+        dataVars <- intersect(names(vArgs), c(
+            'x', 'y', 't', 'series', 'weight', 'facet', 'lat', 'lng'))
         vArgsRaw <- vArgs[dataVars]  # original arg names
         vArgs <- lapply(vArgsRaw, function(v) {
             symbols = all.names(v)
@@ -142,16 +139,18 @@ echart.data.frame = function(
                                sapply(vArgsRaw, deparse), ", data)")))
         hasT <- ! is.null(t)
         hasF <- ! is.null(facet)
-        if (!is.null(facet)){
-            for (i in seq_along(facetvar))
+        if (!is.null(facet))
+            for (i in seq_along(facetvar)){
                 if (!is.factor(data[,facetvar[i]]))
-                    data[,facetvar[i]] = as.factor(data[,facet[i]])
-        }
+                    data[,facetvar[i]] = as.factor(
+                        data[,facetvar[i]], levels=unique(data[,facetvar[i]]))
+            }
         if (!is.null(series))
-            for (i in seq_along(seriesvar))
+            for (i in seq_along(seriesvar)){
                 if (!is.factor(data[,seriesvar[i]]))
-                    data[,seriesvar[i]] = as.factor(data[,seriesvar[i]])
-
+                    data[,seriesvar[i]] = as.factor(
+                        data[,seriesvar[i]], levels=unique(data[,seriesvar[i]]))
+            }
         # ------------------x, y lab(s)----------------------------
         #xlab = ylab = NULL
         if (!missing(x)) xlab = as.character(vArgsRaw$x) else xlab = "x"
@@ -389,6 +388,35 @@ echart.default = echart.data.frame
 #' @export
 #' @rdname eChart
 eChart = echart
+
+mapTypeLayout = function(type, series=NULL, facet=NULL){
+    # series, facet must be factors
+
+    if (!is.null(series)) series = levels(series[,1])
+    if (!is.null(facet)) {
+        if (ncol(facet) == 1) {
+            facet = levels(facet[,1])
+            layout = data.frame(i=seq_along(facet), j=1)
+            layout$x = facet
+            layout$y = NA
+        }else if (ncol(facet) > 1) {
+            facet = expand.grid(
+                levels(facet[,2]), levels(facet[,1]))[,2:1]
+            layout = data.frame(
+                i=unclass(factor(facet[,1])),
+                j=unclass(factor(facet[,2])))
+            layout[,c('x','y')] = facet[,1:2]
+        }
+    }else{
+        layout = data.frame(i=1, j=1, x=NA, y=NA)
+    }
+
+browser()
+
+
+
+    return(layout)
+}
 
 
 determineType = function(x, y) {
