@@ -6,7 +6,7 @@ dependencies:
   - name: echarts_theme
     version: 3.2.3
     src: "htmlwidgets/lib/echarts/theme"
-    script: [dark.js, infographic.js, macarons.js, roma.js, shine.js, vintage.js]
+    script: [dark.js, infographic.js, macarons.js, roma.js, shine.js, vintage.js, red.js, blue.js, green.js, gray.js, mint.js, macarons2.js, helianthus.js, sakura.js]
   - name: echarts_geo
     version: 3.2.3
     src: "htmlwidgets/lib/echarts/geo"
