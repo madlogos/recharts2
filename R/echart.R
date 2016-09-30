@@ -142,13 +142,13 @@ echart.data.frame = function(
         if (!is.null(facet))
             for (i in seq_along(facetvar)){
                 if (!is.factor(data[,facetvar[i]]))
-                    data[,facetvar[i]] = as.factor(
+                    data[,facetvar[i]] = factor(
                         data[,facetvar[i]], levels=unique(data[,facetvar[i]]))
             }
         if (!is.null(series))
             for (i in seq_along(seriesvar)){
                 if (!is.factor(data[,seriesvar[i]]))
-                    data[,seriesvar[i]] = as.factor(
+                    data[,seriesvar[i]] = factor(
                         data[,seriesvar[i]], levels=unique(data[,seriesvar[i]]))
             }
         # ------------------x, y lab(s)----------------------------
