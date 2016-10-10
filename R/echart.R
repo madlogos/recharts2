@@ -389,33 +389,61 @@ echart.default = echart.data.frame
 #' @rdname eChart
 eChart = echart
 
-mapTypeLayout = function(type, series=NULL, facet=NULL){
+
+arrangeLayout = function(series=NULL, facet=NULL){
     # series, facet must be factors
 
-    if (!is.null(series)) series = levels(series[,1])
     if (!is.null(facet)) {
+        stopifnot(is.factor(facet[,1]))
         if (ncol(facet) == 1) {
             facet = levels(facet[,1])
-            layout = data.frame(i=seq_along(facet), j=1)
-            layout$x = facet
-            layout$y = NA
+            layout = data.frame(irow=seq_along(facet), icol=1)
+            layout$row = facet
+            layout$col = NA
         }else if (ncol(facet) > 1) {
             facet = expand.grid(
                 levels(facet[,2]), levels(facet[,1]))[,2:1]
             layout = data.frame(
-                i=unclass(factor(facet[,1])),
-                j=unclass(factor(facet[,2])))
-            layout[,c('x','y')] = facet[,1:2]
+                irow = as.numeric(factor(facet[,1])),
+                icol = as.numeric(factor(facet[,2])))
+            layout[,c('row', 'col')] = facet[,1:2]
         }
     }else{
-        layout = data.frame(i=1, j=1, x=NA, y=NA)
+        layout = data.frame(irow=1, icol=1, row=NA, col=NA)
     }
 
-browser()
+    if (!is.null(series)) series = levels(series[,1]) else series = NA
+    layout = do.call('rbind', lapply(series, function(ser){
+        layout$series = ser
+        return(layout)
+    }))
+    layout$series = factor(layout$series, levels=series)
+    layout = layout[order(layout$irow, layout$icol, layout$ser),]
+    rownames(layout) = layout$i = seq_len(nrow(layout))
+    return(layout[,c('i', 'irow', 'icol', 'row', 'col', 'series')])
+}
 
+matchLayout = function(param, layout){
+    # layout must be the output of arrangeLayout()
+    # param must be a vector or list, could be type/subtype/coordSys
+    stopifnot(is.data.frame(layout))
+    stopifnot(is.vector(param) || is.list(param))
+    if (max(layout$irow) == 1 && max(layout$icol) == 1){  # no facets
+        if (is.list(param)) param = unlist(param)
+        if (length(param) >= nrow(layout)){
+            param = param[1:nrow(layout)]
+        }else{
+            param = c(param, rep(param[length(param)],
+                                 nrow(layout) - length(param)))
+        }
+    }else if (max(layout$irow) > 1 || max(layout$icol) > 1){  # with facets
+        if (!is.list(param)) param = list(param)
+        for (i in 1:length(param)){  # suppl params
 
-
-    return(layout)
+        }
+    }else{
+        stop('the layout is not defined!')
+    }
 }
 
 
