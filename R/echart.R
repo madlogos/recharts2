@@ -162,6 +162,14 @@ echart.data.frame = function(
         if (length(ylab) == 0) ylab = "Freq"
     }
 
+    # ---------------------Layout-----------------------------
+    layout = arrangeLayout(
+        if ('series' %in% dataVars) data.frame(data[, seriesvarRaw]) else NULL,
+        if ('facet' %in% dataVars) data.frame(data[, facetvarRaw]) else NULL)
+    layout$type = if (is.null(type)) NA else matchLayout(tolower(type), layout)
+    layout$subtype = if (is.null(subtype)) NA else
+        matchLayout(tolower(subtype), layout)
+
     # -------------split multi-timeline df to lists-----------
     .makeMetaDataList <- function(df) {
         vars <- sapply(dataVars, function(x) {
@@ -212,11 +220,11 @@ echart.data.frame = function(
     if (type[1] == 'auto')  type = determineType(x[,1], y[,1])
 
     ## type vector: one series, one type
-    if (length(type) >= nSeries){
-        type <- type[1:nSeries]
-    }else{
-        type <- c(type, rep(type[length(type)], nSeries-length(type)))
-    }
+    # if (length(type) >= nSeries){
+    #     type <- type[1:nSeries]
+    # }else{
+    #     type <- c(type, rep(type[length(type)], nSeries-length(type)))
+    # }
 
     ## special: geoJSON map, -- not working
     geoJSON <- NULL
@@ -241,18 +249,18 @@ echart.data.frame = function(
         }
 
     ## subtype
-    subtype <- tolower(subtype)
-    if (!missing(subtype)) if (length(subtype) > 0)
-        if (length(subtype) < nSeries){
-            subtype <- c(subtype, rep(subtype[length(subtype)],
-                                      nSeries-length(subtype)))
-        }else if (length(subtype) > nSeries){
-            subtype <- subtype[1:nSeries]
-        }
+    # subtype <- tolower(subtype)
+    # if (!missing(subtype)) if (length(subtype) > 0)
+    #     if (length(subtype) < nSeries){
+    #         subtype <- c(subtype, rep(subtype[length(subtype)],
+    #                                   nSeries-length(subtype)))
+    #     }else if (length(subtype) > nSeries){
+    #         subtype <- subtype[1:nSeries]
+    #     }
 
     ## type is converted to a data.frame, colnames:
     ## [id name type subtype misc coordSys]
-    dfType <- sapply(validChartTypes$name, function(x) grepl(x, type))
+    dfType <- sapply(validChartTypes$name, function(x) grepl(x, layout$type))
     if (is.null(dim(dfType))){
         typeIdx <- unname(which(dfType))
     }else{
@@ -274,7 +282,7 @@ echart.data.frame = function(
             return(o)
         })
 
-    ## check types
+    ## check types, no longer needed
     if (nlevels(as.factor(dfType$type)) > 1){
         if (!all(grepl("^(line|bar|scatter|k)", dfType$type) ||
                  grepl("^(funnel|pie)", dfType$type) ||
@@ -288,7 +296,7 @@ echart.data.frame = function(
     #                   dfType[, "xyflip"]))
 
     # ---------------------------params list----------------------
-    .makeSeriesList <- function(t){  # each timeline create a options list
+    .makeSeriesList <- function(t){  # each timeline create an options list
         #browser()
         series_fun = getFromNamespace(paste0('series_', dfType$type[1]),
                                       'recharts2')
@@ -391,16 +399,18 @@ eChart = echart
 
 
 arrangeLayout = function(series=NULL, facet=NULL){
+    # arrange the layout of the charts: facets, row & col
     # series, facet must be factors
 
     if (!is.null(facet)) {
-        stopifnot(is.factor(facet[,1]))
+        if (! is.factor(facet[,1])) facet[,1] = as.factor(facet[,1])
         if (ncol(facet) == 1) {
             facet = levels(facet[,1])
             layout = data.frame(irow=seq_along(facet), icol=1)
             layout$row = facet
             layout$col = NA
         }else if (ncol(facet) > 1) {
+            if (! is.factor(facet[,2])) facet[,2] = as.factor(facet[,2])
             facet = expand.grid(
                 levels(facet[,2]), levels(facet[,1]))[,2:1]
             layout = data.frame(
@@ -411,8 +421,14 @@ arrangeLayout = function(series=NULL, facet=NULL){
     }else{
         layout = data.frame(irow=1, icol=1, row=NA, col=NA)
     }
+    layout$ifacet = seq_len(nrow(layout))
 
-    if (!is.null(series)) series = levels(series[,1]) else series = NA
+    if (!is.null(series)) {
+        if (! is.factor(series[,1])) series[,1] = as.factor(series[,1])
+        series = levels(series[,1])
+    }else{
+        series = NA
+    }
     layout = do.call('rbind', lapply(series, function(ser){
         layout$series = ser
         return(layout)
@@ -420,7 +436,7 @@ arrangeLayout = function(series=NULL, facet=NULL){
     layout$series = factor(layout$series, levels=series)
     layout = layout[order(layout$irow, layout$icol, layout$ser),]
     rownames(layout) = layout$i = seq_len(nrow(layout))
-    return(layout[,c('i', 'irow', 'icol', 'row', 'col', 'series')])
+    return(layout[,c('i', 'ifacet', 'irow', 'icol', 'row', 'col', 'series')])
 }
 
 matchLayout = function(param, layout){
@@ -438,12 +454,26 @@ matchLayout = function(param, layout){
         }
     }else if (max(layout$irow) > 1 || max(layout$icol) > 1){  # with facets
         if (!is.list(param)) param = list(param)
+        if (length(param) >= length(unique(layout$ifacet))){
+            param = param[1:length(unique(layout$ifacet))]
+        }else{
+            param = append(param, rep(
+                param[length(param)], length(unique(layout$ifacet)) - length(param)))
+        }
+        lvl.series = levels(layout$series)
         for (i in 1:length(param)){  # suppl params
-
+            if (length(param[[i]]) >= length(lvl.series)){
+                param[[i]] = param[[i]][1:length(lvl.series)]
+            }else{
+                param[[i]] = c(param[[i]], rep(
+                    param[[i]][length(param[[i]])], length(lvl.series) - length(param[[i]])))
+            }
         }
     }else{
-        stop('the layout is not defined!')
+        stop('the layout (', max(layout$irow), ' x ', max(layout$icol),
+             ') is not correctly defined!')
     }
+    return(unlist(param))
 }
 
 
