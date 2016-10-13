@@ -95,7 +95,6 @@ echart.list = function(data, width = NULL, height = NULL,  ...) {
 #' @export
 #' @references
 #' Online Manual: \url{http://madlogos.github.io/recharts2}
-
 #' @export
 #' @rdname eChart
 echart.data.frame = function(
@@ -117,7 +116,7 @@ echart.data.frame = function(
         })
         if (inherits(data, 'data.frame')) data <- as.data.frame(data)
 
-        #------------- get all arguments as a list-----------------
+        #-------------get all arguments as a list-----------------
         vArgs <- as.list(match.call(expand.dots=TRUE))
         dataVars <- intersect(names(vArgs), c(
             'x', 'y', 't', 'series', 'weight', 'facet', 'lat', 'lng'))
@@ -128,7 +127,7 @@ echart.data.frame = function(
                 return(as.symbol(symbols[symbols %in% names(data)]))
             # should be sapply(symbols[symbols %in% names(data)], as.symbol)
             v
-        })  # get arg names correspond to data vars
+        })  # get arg names corresponding to data vars
 
         # ------------extract var names and values-----------------
         eval(parse(text=paste0(names(vArgs), "var <- evalVarArg(",
@@ -142,14 +141,12 @@ echart.data.frame = function(
         if (!is.null(facet))
             for (i in seq_along(facetvar)){
                 if (!is.factor(data[,facetvar[i]]))
-                    data[,facetvar[i]] = factor(
-                        data[,facetvar[i]], levels=unique(data[,facetvar[i]]))
+                    data[,facetvar[i]] = as.factor(data[,facetvar[i]])
             }
         if (!is.null(series))
             for (i in seq_along(seriesvar)){
                 if (!is.factor(data[,seriesvar[i]]))
-                    data[,seriesvar[i]] = factor(
-                        data[,seriesvar[i]], levels=unique(data[,seriesvar[i]]))
+                    data[,seriesvar[i]] = as.factor(data[,seriesvar[i]])
             }
         # ------------------x, y lab(s)----------------------------
         #xlab = ylab = NULL
@@ -162,27 +159,59 @@ echart.data.frame = function(
         if (length(ylab) == 0) ylab = "Freq"
     }
 
-    # ---------------------Layout-----------------------------
+    # ----------------Layout, type, subtype---------------------
     layout = arrangeLayout(
         if ('series' %in% dataVars) data.frame(data[, seriesvarRaw]) else NULL,
-        if ('facet' %in% dataVars) data.frame(data[, facetvarRaw]) else NULL)
+        if ('facet' %in% dataVars) data.frame(data[, facetvarRaw]) else NULL
+    )
     layout$type = if (is.null(type)) NA else matchLayout(tolower(type), layout)
     layout$subtype = if (is.null(subtype)) NA else
         matchLayout(tolower(subtype), layout)
 
-    # -------------split multi-timeline df to lists-----------
+    # -------------split df to lists-----------
     .makeMetaDataList <- function(df) {
+        # generate metaData, df wrapped in lists
+
         vars <- sapply(dataVars, function(x) {
             eval(parse(text=paste0(x, 'varRaw')))}, simplify=TRUE)
         if (!is.null(dim(vars)))
             vars <- paste0(
-                'c(',apply(vars, 2, function(x) paste(x, collapse=',')), ')')
+                'c(', apply(vars, 2, function(x) paste(x, collapse=',')), ')'
+            )
         assignment <- paste0(dataVars, " = evalVarArg(", vars, ", ",
                              substitute(df, parent.frame()), ")")
-        # assignment <- paste0(dataVars, " = evalVarArg(", vArgsRaw[dataVars], ", ",
-        #                      substitute(df, parent.frame()), ")")
+        #assignment <- gsub("\\\"",  "", assignment)
         eval(parse(text=paste0("list(", paste(assignment, collapse=", "), ")")))
     }
+
+    .splitFacetSeries <- function(df){
+        # inherit dataVars, facetvarRaw, seriesvarRaw
+        if ('facet' %in% dataVars){
+            if ('series' %in% dataVars){
+                out <- split(df, if (length(facetvarRaw) > 1) {
+                    list(df[,facetvarRaw[1]], df[,facetvarRaw[2]],
+                         df[,seriesvarRaw[1]])
+                }else{
+                    list(df[,facetvarRaw[1]], df[,seriesvarRaw[1]])
+                })
+            }else{
+                out <- split(df, if (length(facetvarRaw) > 1) {
+                    list(df[,facetvarRaw[1]], df[,facetvarRaw[2]])
+                }else{
+                    list(df[,facetvarRaw[1]])
+                })
+            }
+        }else{
+            if ('series' %in% dataVars){
+                out <- split(df,  list(df[,seriesvarRaw[1]]))
+            }else{
+                out <- list(df)
+            }
+        }
+        return(out)
+    }
+
+    fullMeta <- .makeMetaDataList(data)
     if (hasT){
         uniT <- unique(t[,1])
         if (is.factor(uniT)) uniT <- as.character(uniT)
@@ -200,16 +229,20 @@ echart.data.frame = function(
         dataByT <- split(data, as.factor(data[,tvar[1]]))
         metaData <- lapply(dataByT, .makeMetaDataList)
         names(metaData) <- uniT
+
+        seriesData <- lapply(dataByT, .splitFacetSeries)
         if (! identical(unique(t[,1]), sort(unique(t[,1]))) &&
             ! identical(unique(t[,1]), sort(unique(t[,1]), TRUE)))
             warning("t is not in order, the chart may not show properly!")
     }else{
-        metaData <- .makeMetaDataList(data)
+        metaData <- fullMeta
+        seriesData <- .splitFacetSeries(data)
     }
 
-    # -----------------determine types---------------------------
-    type <- tolower(type)
-    check.types <- unname(sapply(c('auto', validChartTypes$name), grepl, x=type))
+    # -----------------check / determine types---------------------------
+    #type <- tolower(type)
+    check.types <- unname(sapply(c('auto', validChartTypes$name),
+                                 grepl, x=layout$type))
     if (is.null(dim(check.types)))
         check.types <- matrix(check.types, nrow=1)
     if (!any(check.types))
@@ -268,10 +301,10 @@ echart.data.frame = function(
                                         function(i) which(dfType[i,]))))
     }
     dfType <- validChartTypes[typeIdx,]
-    lstSubtype <- rep('', length(type))
+    lstSubtype <- rep('', nrow(layout))
     if (!missing(subtype)) if (length(subtype) > 0)
-        lstSubtype <- lapply(1:length(subtype), function(i){
-            str <- subtype[i]
+        lstSubtype <- lapply(1:nrow(layout), function(i){
+            str <- layout[i, 'subtype']
             validSubtype <- eval(parse(text=tolower(dfType[i, 'subtype'])))
             strSubtype <- unlist(strsplit(str, '[_|\\+]'))
             strSubtype <- gsub("^ +| +$", "", strSubtype)
@@ -282,18 +315,14 @@ echart.data.frame = function(
             return(o)
         })
 
-    ## check types, no longer needed
-    if (nlevels(as.factor(dfType$type)) > 1){
-        if (!all(grepl("^(line|bar|scatter|k)", dfType$type) ||
-                 grepl("^(funnel|pie)", dfType$type) ||
-                 grepl("^(force|chord)", dfType$type) ||
-                 grepl("^(tree|treemap)", dfType$type)))
-            stop(paste("recharts2 does not support such mixed types yet."))
-    }
-
-    # if (nlevels(as.factor(dfType$xyflip)) > 1)
-    #     warning(paste("xyflip is not consistent across the types given.\n",
-    #                   dfType[, "xyflip"]))
+    ## check types--- no longer needed
+    # if (nlevels(as.factor(dfType$type)) > 1){
+    #     if (!all(grepl("^(line|bar|scatter|k)", dfType$type) ||
+    #              grepl("^(funnel|pie)", dfType$type) ||
+    #              grepl("^(force|chord)", dfType$type) ||
+    #              grepl("^(tree|treemap)", dfType$type)))
+    #         stop(paste("recharts2 does not support such mixed types yet."))
+    # }
 
     # ---------------------------params list----------------------
     .makeSeriesList <- function(t){  # each timeline create an options list
