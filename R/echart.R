@@ -92,6 +92,7 @@ echart.list = function(data, width = NULL, height = NULL,  ...) {
 #' }
 #' @param ... Other params to pass to echarts object
 #'
+#' @import compiler
 #' @export
 #' @references
 #' Online Manual: \url{http://madlogos.github.io/recharts2}
@@ -139,14 +140,14 @@ echart.data.frame = function(
         hasT <- ! is.null(t)
         hasF <- ! is.null(facet)
         if (!is.null(facet))
-            for (i in seq_along(facetvar)){
-                if (!is.factor(data[,facetvar[i]]))
-                    data[,facetvar[i]] = as.factor(data[,facetvar[i]])
+            for (i in seq_along(facetvarRaw)){
+                if (!is.factor(data[,facetvarRaw[i]]))
+                    data[,facetvarRaw[i]] = as.factor(data[,facetvarRaw[i]])
             }
         if (!is.null(series))
-            for (i in seq_along(seriesvar)){
-                if (!is.factor(data[,seriesvar[i]]))
-                    data[,seriesvar[i]] = as.factor(data[,seriesvar[i]])
+            for (i in seq_along(seriesvarRaw)){
+                if (!is.factor(data[,seriesvarRaw[i]]))
+                    data[,seriesvarRaw[i]] = as.factor(data[,seriesvarRaw[i]])
             }
         # ------------------x, y lab(s)----------------------------
         #xlab = ylab = NULL
@@ -169,7 +170,7 @@ echart.data.frame = function(
         matchLayout(tolower(subtype), layout)
 
     # -------------split df to lists-----------
-    .makeMetaDataList <- function(df) {
+    .makeMetaDataList <- cmpfun(function(df) {
         # generate metaData, df wrapped in lists
 
         vars <- sapply(dataVars, function(x) {
@@ -180,11 +181,11 @@ echart.data.frame = function(
             )
         assignment <- paste0(dataVars, " = evalVarArg(", vars, ", ",
                              substitute(df, parent.frame()), ")")
-        #assignment <- gsub("\\\"",  "", assignment)
+        assignment <- gsub("\\\"",  "", assignment)
         eval(parse(text=paste0("list(", paste(assignment, collapse=", "), ")")))
-    }
+    })
 
-    .splitFacetSeries <- function(df){
+    .splitFacetSeries <- cmpfun(function(df){
         # inherit dataVars, facetvarRaw, seriesvarRaw
         if ('facet' %in% dataVars){
             if ('series' %in% dataVars){
@@ -209,7 +210,7 @@ echart.data.frame = function(
             }
         }
         return(out)
-    }
+    })
 
     fullMeta <- .makeMetaDataList(data)
     if (hasT){
@@ -238,6 +239,7 @@ echart.data.frame = function(
         metaData <- fullMeta
         seriesData <- .splitFacetSeries(data)
     }
+    seriesData <- lapply(seriesData, .makeMetaDataList)
 
     # -----------------check / determine types---------------------------
     #type <- tolower(type)
@@ -248,16 +250,22 @@ echart.data.frame = function(
     if (!any(check.types))
         stop("Invalid chart type!\n", paste(type[which(rowSums(check.types)==0)], ', '),
              " not matching the valid chart type table.")
-    if (!is.null(series)) lvlSeries <- levels(as.factor(series[,1]))
-    if (!is.null(series)) nSeries <- length(lvlSeries) else nSeries <- 1
-    if (type[1] == 'auto')  type = determineType(x[,1], y[,1])
-
-    ## type vector: one series, one type
-    # if (length(type) >= nSeries){
-    #     type <- type[1:nSeries]
-    # }else{
-    #     type <- c(type, rep(type[length(type)], nSeries-length(type)))
-    # }
+    if (!is.null(series)) {
+        lvlSeries <- levels(as.factor(series[,1]))
+        nSeries <- length(lvlSeries)
+    }else{
+        nSeries <- 1
+    }
+    # determine chart types if 'auto'
+    layout$type = sapply(1:nrow(layout), function(i){
+        if (layout$type[[i]] == 'auto') {
+            if (nrow(seriesData[[i]]$x) == 0) 'scatter' else
+            determineType(
+                seriesData[[i]]$x[,1], seriesData[[i]]$y[,1])
+        }else{
+            layout$type[i]
+        }
+    })
 
     ## special: geoJSON map, -- not working
     geoJSON <- NULL
@@ -280,16 +288,6 @@ echart.data.frame = function(
                     con)
             }
         }
-
-    ## subtype
-    # subtype <- tolower(subtype)
-    # if (!missing(subtype)) if (length(subtype) > 0)
-    #     if (length(subtype) < nSeries){
-    #         subtype <- c(subtype, rep(subtype[length(subtype)],
-    #                                   nSeries-length(subtype)))
-    #     }else if (length(subtype) > nSeries){
-    #         subtype <- subtype[1:nSeries]
-    #     }
 
     ## type is converted to a data.frame, colnames:
     ## [id name type subtype misc coordSys]
@@ -325,38 +323,47 @@ echart.data.frame = function(
     # }
 
     # ---------------------------params list----------------------
-    .makeSeriesList <- function(t){  # each timeline create an options list
-        #browser()
-        series_fun = getFromNamespace(paste0('series_', dfType$type[1]),
-                                      'recharts2')
-
+    .makeSeriesList <- cmpfun(function(t){  # each timeline create an options list
+        browser()
         if (is.null(t)){  # no timeline
-            time_metaData = lapply(metaData, function(df){
-                data.frame(lapply(df, function(col) {
-                    if (inherits(col, c("Date", "POSIXlt", "POSIXlt")))
-                        col = convTimestamp(col)
-                    return(col)
-                }))
-            })
-            out <- structure(list(
-                series = series_fun(time_metaData, type=dfType, subtype=lstSubtype)
-            ), meta = metaData)
-        }else{  # with timeline
-            time_metaData = lapply(metaData, function(df){
-                lapply(df, function(col) {
-                    if (inherits(col, c("Date", "POSIXlt", "POSIXlt")))
-                        col = convTimestamp(col)
-                    return(col)
+            time_metaData = lapply(seriesData, function(lst){
+                lapply(lst, function(df){
+                    data.frame(lapply(df, function(col) {
+                        if (inherits(col, c("Date", "POSIXlt", "POSIXlt")))
+                            col = convTimestamp(col)
+                        return(col)
+                    }))
                 })
             })
-            out <- structure(list(
-                series = series_fun(time_metaData[[t]], type=dfType,
-                                    subtype=lstSubtype, fullMeta=metaData)
-            ), meta = metaData[[t]])
+            lstSeries = lapply(1:nrow(layout), function(i) {
+                series_fun = getFromNamespace(paste0('series_', dfType$type[i]),
+                                              'recharts2')
+                series_fun(seriesData[[i]], type = dfType[i,],
+                           subtype = lstSubtype[[i]])
+            })
+            out <- structure(list(series=lstSeries),
+                             meta = seriesData, layout = layout)
+        }else{  # with timeline
+            time_metaData = lapply(seriesData, function(lst){
+                lapply(lst, function(df) {
+                    lapply(df, function(col){
+                        if (inherits(col, c("Date", "POSIXlt", "POSIXlt")))
+                            col = convTimestamp(col)
+                        return(col)
+                    })
+                })
+            })
+            lstSeries = lapply(1:nrow(layout), function(i) {
+                series_fun = getFromNamespace(paste0('series_', dfType$type[i]),
+                                              'recharts2')
+                series_fun(time_metaData[[t]], type = dfType[i,],
+                           subtype = lstSubtype[[i]], fullMeta=metaData)
+            })
+            out <- structure(list(series = lstSeries), meta = metaData[[t]])
         }
 
         return(out)
-    }
+    })
 
     if (hasT){  ## has timeline
         params = list(
@@ -517,6 +524,8 @@ determineType = function(x, y) {
     # http://echarts.baidu.com/doc/doc.html
     if ((is.numeric(x) && is.null(y)) || (is.numeric(y) && is.null(x)))
         return('histogram')
+    if ((inherits(x, c("Date", "POSIXlt", "POSIXct")) && is.numeric(y)))
+        return('curve')
     message('The structure of x:')
     str(x)
     message('The structure of y:')
