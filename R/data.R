@@ -1,10 +1,10 @@
 #' @importFrom data.table melt
-series_scatter <- function(lst, type, subtype, return=NULL, ...){
+series_scatter <- function(lst, type, subtype, fullMeta, return=NULL, ...){
     # g = echartr(mtcars, wt, mpg, am)
     if (is.null(lst$x) || is.null(lst$y))
         stop('scatter charts need x and y!')
     lst <- mergeList(list(weight=NULL, series=NULL), lst)
-    if (!is.numeric(lst$x[,1])) stop('x and y must be numeric')
+    #if (!is.numeric(lst$x[,1])) stop('x and y must be numeric')
     data <- cbind(lst$y[,1], lst$x[,1])
 
     if (!is.null(lst$weight)){  # weight as symbolSize
@@ -34,48 +34,29 @@ series_scatter <- function(lst, type, subtype, return=NULL, ...){
             lineWidths[is.na(lineWidths)] <- 1
         }
     }
-    obj <- list()
-    if (is.null(lst$series)) {  # no series
-        if (is.null(lst$weight)){
-            obj <- list(list(type=type$type[1], data=asEchartData(data[,2:1])))
-        }else{
-            obj <- list(list(type=type$type[1], data=asEchartData(data[,c(2:1,3)])))
-            if (grepl('bubble', type$misc[1])) obj[[1]]$symbolSize <- jsSymbolSize
-        }
-    }else{  # series-specific
-        data <- cbind(data, lst$series[,1])
-        data <- split(as.data.frame(data), lst$series[,1])
-        if (is.null(lst$weight)){
-            obj <- lapply(seq_along(data), function(i){
-                list(name = names(data)[i], type = type$type[i],
-                     data = asEchartData(data[[i]][,2:1]))
-            })  ## only fetch col 1-2 of data, col 3 is series
-        }else{
-            obj <- lapply(seq_along(data), function(i){
-                out <- list(name = names(data)[i], type = type$type[i],
-                            data = asEchartData(data[[i]][,c(2:1, 3)]))
-                if (grepl('bubble', type$misc[i])) out$symbolSize <- jsSymbolSize
-                # line, weight links to line width
-                if (type$type[i] == 'line' && !is.null(lineWidths)){
-                    if (is.null(out$itemStyle)) out$itemStyle <- list()
-                    if (is.null(out$itemStyle$normal))
-                        out$itemStyle$normal <- list()
-                    if (is.null(out$itemStyle$normal$lineStyle))
-                        out$itemStyle$normal$lineStyle <- list()
-                    out$itemStyle$normal$lineStyle <- mergeList(
-                        out$itemStyle$normal$lineStyle, list(width=lineWidths[i])
-                    )
-                }
-                return(out)
-            })  ## fetch col 1-2 and 3 (x, y, weight)
-        }
-    }
 
-    if (is.null(return)){
-        return(obj)
+    if (is.null(lst$weight)){
+        obj <- list(type = type$type[1], data = asEchartData(data[,2:1]))
+        ## only fetch col 1-2 of data, col 3 is series
     }else{
-        return(obj[intersect(names(obj), return)])
+        obj <- list(type = type$type[i],
+                    data = asEchartData(data[[i]][,c(2:1, 3)]))
+            if (grepl('bubble', type$misc)) obj$symbolSize <- jsSymbolSize
+            # line, weight links to line width
+            if (type$type == 'line' && !is.null(lineWidths)){
+                if (is.null(obj$itemStyle)) obj$itemStyle <- list()
+                if (is.null(obj$itemStyle$normal))
+                    obj$itemStyle$normal <- list()
+                if (is.null(obj$itemStyle$normal$lineStyle))
+                    obj$itemStyle$normal$lineStyle <- list()
+                obj$itemStyle$normal$lineStyle <- mergeList(
+                    obj$itemStyle$normal$lineStyle, list(width=lineWidths)
+                )
+            }  ## fetch col 1-2 and 3 (x, y, weight)
     }
+    if (!is.null(lst$series)) obj$name = lst$series[1,1]
+
+    return(obj[intersect(names(obj), ifnull(return, names(obj)))])
 }
 
 series_bar <- function(lst, type, subtype, return=NULL, ...){
@@ -176,11 +157,7 @@ series_bar <- function(lst, type, subtype, return=NULL, ...){
         })
     }
 
-    if (is.null(return)){
-        return(obj)
-    }else{
-        return(obj[intersect(names(obj), return)])
-    }
+    return(obj[intersect(names(obj), ifnull(return, names(obj)))])
 }
 
 series_line = function(lst, type, subtype, return=NULL, ...) {
@@ -255,12 +232,7 @@ series_line = function(lst, type, subtype, return=NULL, ...) {
         #obj[[i]]$symbolSize <- 0
     }
 
-    if (is.null(return)){
-        return(obj)
-    }else{
-        return(obj[intersect(names(obj), return)])
-    }
-
+    return(obj[intersect(names(obj), ifnull(return, names(obj)))])
 }
 
 series_k <- function(lst, type, subtype, return=NULL, ...){
@@ -424,11 +396,7 @@ series_pie <- function(lst, type, subtype, return=NULL, ...){
     }
     obj <- unname(obj)
 
-    if (is.null(return)){
-        return(obj)
-    }else{
-        return(obj[intersect(names(obj), return)])
-    }
+    return(obj[intersect(names(obj), ifnull(return, names(obj)))])
 }
 
 series_funnel <- series_pie
@@ -511,11 +479,7 @@ series_radar <- function(lst, type, subtype, return=NULL, ...){
         return(out)
     })
 
-    if (is.null(return)){
-        return(obj)
-    }else{
-        return(obj[intersect(names(obj), return)])
-    }
+    return(obj[intersect(names(obj), ifnull(return, names(obj)))])
 }
 
 series_force <- function(lst, type, subtype, return=NULL, ...){
@@ -635,11 +599,7 @@ series_force <- function(lst, type, subtype, return=NULL, ...){
         if ('clock' %in% subtype[[1]] || 'clockwise' %in% subtype[[1]])
             o[[1]]$closeWise <- TRUE
 
-        if (is.null(return)){
-            return(o)
-        }else{
-            return(o[intersect(names(o), return)])
-        }
+        return(o[intersect(names(o), ifnull(return, names(o)))])
     }
 }
 
@@ -684,11 +644,7 @@ series_gauge <- function(lst, type, subtype, return=NULL, ...){
         return(o)
     })
 
-    if (is.null(return)){
-        return(out)
-    }else{
-        return(out[intersect(names(out), return)])
-    }
+    return(oout[intersect(names(out), ifnull(return, names(out)))])
 }
 
 series_map <- function(lst, type, subtype, return=NULL, ...){
@@ -799,11 +755,7 @@ series_map <- function(lst, type, subtype, return=NULL, ...){
         return(o)
     })
 
-    if (is.null(return)){
-        return(out)
-    }else{
-        return(out[intersect(names(out), return)])
-    }
+    return(out[intersect(names(out), ifnull(return, names(out)))])
 }
 
 
@@ -839,11 +791,7 @@ series_wordCloud <- function(lst, type, subtype, return=NULL, ...){
         attr(o[[1]]$data, 'meta') <- data$series
     }
 
-    if (is.null(return)){
-        return(o)
-    }else{
-        return(o[intersect(names(o), return)])
-    }
+    return(o[intersect(names(o), ifnull(return, names(o)))])
 }
 
 series_eventRiver <- function(lst, type, subtype, return=NULL, ...){
@@ -904,11 +852,7 @@ series_eventRiver <- function(lst, type, subtype, return=NULL, ...){
         return(o)
     })
 
-    if (is.null(return)){
-        return(out)
-    }else{
-        return(out[intersect(names(out), return)])
-    }
+    return(out[intersect(names(out), ifnull(return, names(out)))])
 }
 
 series_venn <- function(lst, type, return=NULL, ...){
@@ -925,11 +869,7 @@ series_venn <- function(lst, type, return=NULL, ...){
         }))
     ))
 
-    if (is.null(return)){
-        return(o)
-    }else{
-        return(o[intersect(names(o), return)])
-    }
+    return(o[intersect(names(o), ifnull(return, names(o)))])
 }
 
 series_tree <- function(lst, type, subtype, return=NULL, ...){
@@ -993,11 +933,7 @@ series_tree <- function(lst, type, subtype, return=NULL, ...){
         return(o)
     })
 
-    if (is.null(return)){
-        return(out)
-    }else{
-        return(out[intersect(names(out), return)])
-    }
+    return(out[intersect(names(out), ifnull(return, names(out)))])
 }
 
 series_treemap <- series_tree
@@ -1022,9 +958,5 @@ series_heatmap <- function(lst, type, subtype, return=NULL, ...){
               gradientColors=c('blue', 'cyan', 'limegreen', 'yellow', 'red'),
               data=asEchartData(unname(data[,c('lng', 'lat', 'y')]))
     ))
-    if (is.null(return)){
-        return(o)
-    }else{
-        return(o[intersect(names(o), return)])
-    }
+    return(o[intersect(names(o), ifnull(return, names(o)))])
 }

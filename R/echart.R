@@ -104,25 +104,25 @@ echart.data.frame = function(
 ...) {
 
     if (is.null(data)){
-        data <- data.frame(x='', stringsAsFactors=FALSE)
-        dataVars <- list('x')
-        xvarRaw <- 'x'
-        hasT <- FALSE
-        hasF <- FALSE
-        xlab <- ylab <- ''
+        data = data.frame(x='', stringsAsFactors=FALSE)
+        dataVars = list('x')
+        xvarRaw = 'x'
+        hasT = FALSE
+        hasF = FALSE
+        xlab = ylab = ''
     }else{
         lapply(seq_along(names(data)), function(j){
             if (is.character(data[,j]))
-                data[,j] <- enc2native(data[,j])
+                data[,j] = enc2native(data[,j])
         })
-        if (inherits(data, 'data.frame')) data <- as.data.frame(data)
+        if (inherits(data, 'data.frame')) data = as.data.frame(data)
 
         #-------------get all arguments as a list-----------------
-        vArgs <- as.list(match.call(expand.dots=TRUE))
-        dataVars <- intersect(names(vArgs), c(
+        vArgs = as.list(match.call(expand.dots=TRUE))
+        dataVars = intersect(names(vArgs), c(
             'x', 'y', 't', 'series', 'weight', 'facet', 'lat', 'lng'))
-        vArgsRaw <- vArgs[dataVars]  # original arg names
-        vArgs <- lapply(vArgsRaw, function(v) {
+        vArgsRaw = vArgs[dataVars]  # original arg names
+        vArgs = lapply(vArgsRaw, function(v) {
             symbols = all.names(v)
             if (any(symbols %in% names(data)))
                 return(as.symbol(symbols[symbols %in% names(data)]))
@@ -131,14 +131,14 @@ echart.data.frame = function(
         })  # get arg names corresponding to data vars
 
         # ------------extract var names and values-----------------
-        eval(parse(text=paste0(names(vArgs), "var <- evalVarArg(",
+        eval(parse(text=paste0(names(vArgs), "var = evalVarArg(",
                                sapply(vArgs, deparse), ", data, eval=FALSE)")))
-        eval(parse(text=paste0(names(vArgs), "varRaw <- evalVarArg(",
+        eval(parse(text=paste0(names(vArgs), "varRaw = evalVarArg(",
                                sapply(vArgsRaw, deparse), ", data, eval=FALSE)")))
-        eval(parse(text=paste0(names(vArgsRaw), " <- evalVarArg(",
+        eval(parse(text=paste0(names(vArgsRaw), " = evalVarArg(",
                                sapply(vArgsRaw, deparse), ", data)")))
-        hasT <- ! is.null(t)
-        hasF <- ! is.null(facet)
+        hasT = ! is.null(t)
+        hasF = ! is.null(facet)
         if (!is.null(facet))
             for (i in seq_along(facetvarRaw)){
                 if (!is.factor(data[,facetvarRaw[i]]))
@@ -169,34 +169,36 @@ echart.data.frame = function(
     layout$subtype = if (is.null(subtype)) NA else
         matchLayout(tolower(subtype), layout)
 
-    # -------------split df to lists-----------
-    .makeMetaDataList <- cmpfun(function(df) {
+    # -----------------split df to lists---------------------
+    .makeMetaDataList = cmpfun(function(df) {
         # generate metaData, df wrapped in lists
 
-        vars <- sapply(dataVars, function(x) {
+        vars = sapply(dataVars, function(x) {
             eval(parse(text=paste0(x, 'varRaw')))}, simplify=TRUE)
         if (!is.null(dim(vars)))
-            vars <- paste0(
+            vars = paste0(
                 'c(', apply(vars, 2, function(x) paste(x, collapse=',')), ')'
             )
-        assignment <- paste0(dataVars, " = evalVarArg(", vars, ", ",
+        assignment = paste0(dataVars, " = evalVarArg(", vars, ", ",
                              substitute(df, parent.frame()), ")")
-        assignment <- gsub("\\\"",  "", assignment)
+        assignment = gsub("\\\"",  "", assignment)
         eval(parse(text=paste0("list(", paste(assignment, collapse=", "), ")")))
     })
 
-    .splitFacetSeries <- cmpfun(function(df){
+    .splitFacetSeries = cmpfun(function(df){
         # inherit dataVars, facetvarRaw, seriesvarRaw
+        facetvarRaw = get0("facetvarRaw")
+        seriesvarRaw = get0("seriesvarRaw")
         if ('facet' %in% dataVars){
             if ('series' %in% dataVars){
-                out <- split(df, if (length(facetvarRaw) > 1) {
+                out = split(df, if (length(facetvarRaw) > 1) {
                     list(df[,facetvarRaw[1]], df[,facetvarRaw[2]],
                          df[,seriesvarRaw[1]])
                 }else{
                     list(df[,facetvarRaw[1]], df[,seriesvarRaw[1]])
                 })
             }else{
-                out <- split(df, if (length(facetvarRaw) > 1) {
+                out = split(df, if (length(facetvarRaw) > 1) {
                     list(df[,facetvarRaw[1]], df[,facetvarRaw[2]])
                 }else{
                     list(df[,facetvarRaw[1]])
@@ -204,57 +206,56 @@ echart.data.frame = function(
             }
         }else{
             if ('series' %in% dataVars){
-                out <- split(df,  list(df[,seriesvarRaw[1]]))
+                out = split(df,  list(df[,seriesvarRaw[1]]))
             }else{
-                out <- list(df)
+                out = list(df)
             }
         }
         return(out)
     })
 
-    fullMeta <- .makeMetaDataList(data)
+    fullMeta = .makeMetaDataList(data)
     if (hasT){
-        uniT <- unique(t[,1])
-        if (is.factor(uniT)) uniT <- as.character(uniT)
-        tSize <- unique(table(data[,tvar]))
+        uniT = unique(t[,1])
+        if (is.factor(uniT)) uniT = as.character(uniT)
+        tSize = unique(table(data[,tvar]))
 
         # timeslices not in equal size across t, suppl it
         if (length(tSize) > 1 && is.character(x[,1])) {
-            expandData <- data.frame(expand.grid(unique(x[,1]), unique(t[,1]),
+            expandData = data.frame(expand.grid(unique(x[,1]), unique(t[,1]),
                                                  stringsAsFactors=FALSE))
-            names(expandData) <- c(xvar[1], tvar[1])
-            data <- merge(expandData, data, all.x=TRUE, sort=FALSE)
-            data <- data[order(data[,tvar[1]]),]
+            names(expandData) = c(xvar[1], tvar[1])
+            data = merge(expandData, data, all.x=TRUE, sort=FALSE)
+            data = data[order(data[,tvar[1]]),]
         }
 
-        dataByT <- split(data, as.factor(data[,tvar[1]]))
-        metaData <- lapply(dataByT, .makeMetaDataList)
-        names(metaData) <- uniT
+        dataByT = split(data, as.factor(data[,tvar[1]]))
+        metaData = lapply(dataByT, .makeMetaDataList)
+        names(metaData) = uniT
 
-        seriesData <- lapply(dataByT, .splitFacetSeries)
+        seriesData = lapply(dataByT, .splitFacetSeries)
         if (! identical(unique(t[,1]), sort(unique(t[,1]))) &&
             ! identical(unique(t[,1]), sort(unique(t[,1]), TRUE)))
             warning("t is not in order, the chart may not show properly!")
     }else{
-        metaData <- fullMeta
-        seriesData <- .splitFacetSeries(data)
+        metaData = fullMeta
+        seriesData = .splitFacetSeries(data)
     }
-    seriesData <- lapply(seriesData, .makeMetaDataList)
+    seriesData = lapply(seriesData, .makeMetaDataList)
 
-    # -----------------check / determine types---------------------------
-    #type <- tolower(type)
-    check.types <- unname(sapply(c('auto', validChartTypes$name),
+    # -----------------check / determine chart types--------------------------
+    check.types = unname(sapply(c('auto', validChartTypes$name),
                                  grepl, x=layout$type))
     if (is.null(dim(check.types)))
-        check.types <- matrix(check.types, nrow=1)
+        check.types = matrix(check.types, nrow=1)
     if (!any(check.types))
         stop("Invalid chart type!\n", paste(type[which(rowSums(check.types)==0)], ', '),
              " not matching the valid chart type table.")
     if (!is.null(series)) {
-        lvlSeries <- levels(as.factor(series[,1]))
-        nSeries <- length(lvlSeries)
+        lvlSeries = levels(as.factor(series[,1]))
+        nSeries = length(lvlSeries)
     }else{
-        nSeries <- 1
+        nSeries = 1
     }
     # determine chart types if 'auto'
     layout$type = sapply(1:nrow(layout), function(i){
@@ -268,17 +269,17 @@ echart.data.frame = function(
     })
 
     ## special: geoJSON map, -- not working
-    geoJSON <- NULL
+    geoJSON = NULL
     if (any(type == 'map'))
         if (all(! grep('.+[Jj][Ss][Oo][Nn]$', subtype))) {
             stop('When type is "map", geoJSON file must be provided in subtype')
         }else{
             if (grep('.+[Jj][Ss][Oo][Nn]$', subtype) > 1)
                 warning('echart only accepts the first geoJSON file.')
-            geoJSON <- subtype[grep('.+[Jj][Ss][Oo][Nn]$', subtype)][1]
-            con <- system.file('htmlwidgets/lib/echarts/ext/loadGeoJSON.js',
+            geoJSON = subtype[grep('.+[Jj][Ss][Oo][Nn]$', subtype)][1]
+            con = system.file('htmlwidgets/lib/echarts/ext/loadGeoJSON.js',
                                package='recharts2')
-            paramPath <- system.file('htmlwidgets/lib/echarts/ext',
+            paramPath = system.file('htmlwidgets/lib/echarts/ext',
                                      package='recharts2')
             if (file.exists(con)){
                 writeLines(paste0(
@@ -289,27 +290,29 @@ echart.data.frame = function(
             }
         }
 
-    ## type is converted to a data.frame, colnames:
-    ## [id name type subtype misc coordSys]
-    dfType <- sapply(validChartTypes$name, function(x) grepl(x, layout$type))
+    ## Convert chart type to a data.frame, modify df layout
+    ## colnames: [id name type subtype misc coordSys]
+    dfType = sapply(validChartTypes$name, function(x) grepl(x, layout$type))
     if (is.null(dim(dfType))){
-        typeIdx <- unname(which(dfType))
+        typeIdx = unname(which(dfType))
     }else{
-        typeIdx <- unname(unlist(sapply(seq_len(nrow(dfType)),
+        typeIdx = unname(unlist(sapply(seq_len(nrow(dfType)),
                                         function(i) which(dfType[i,]))))
     }
-    dfType <- validChartTypes[typeIdx,]
-    lstSubtype <- rep('', nrow(layout))
+    dfType = validChartTypes[typeIdx,]
+    layout$coordSys = dfType$coordSys
+    layout = arrangeCoordIndex(layout)
+    lstSubtype = rep('', nrow(layout))
     if (!missing(subtype)) if (length(subtype) > 0)
-        lstSubtype <- lapply(1:nrow(layout), function(i){
-            str <- layout[i, 'subtype']
-            validSubtype <- eval(parse(text=tolower(dfType[i, 'subtype'])))
-            strSubtype <- unlist(strsplit(str, '[_|\\+]'))
-            strSubtype <- gsub("^ +| +$", "", strSubtype)
-            jsonFile <- strSubtype[grepl("\\.[Jj][Ss][Oo][Nn]$", strSubtype)]
-            o <- intersect(validSubtype, strSubtype)
-            if (length(jsonFile) > 0) o <- c(o, jsonFile)
-            if (length(o) == 0) o <- ''
+        lstSubtype = lapply(1:nrow(layout), function(i){
+            str = layout[i, 'subtype']
+            validSubtype = eval(parse(text=tolower(dfType[i, 'subtype'])))
+            strSubtype = unlist(strsplit(str, '[_|\\+]'))
+            strSubtype = gsub("^ +| +$", "", strSubtype)
+            jsonFile = strSubtype[grepl("\\.[Jj][Ss][Oo][Nn]$", strSubtype)]
+            o = intersect(validSubtype, strSubtype)
+            if (length(jsonFile) > 0) o = c(o, jsonFile)
+            if (length(o) == 0) o = ''
             return(o)
         })
 
@@ -323,13 +326,15 @@ echart.data.frame = function(
     # }
 
     # ---------------------------params list----------------------
-    .makeSeriesList <- cmpfun(function(t){  # each timeline create an options list
-        browser()
+    .makeSeriesList = cmpfun(function(t){
+        # each timeline create an options list
+        # inherits seriesData, dfType, lstSubtype, layout
+        #browser()
         if (is.null(t)){  # no timeline
             time_metaData = lapply(seriesData, function(lst){
                 lapply(lst, function(df){
                     data.frame(lapply(df, function(col) {
-                        if (inherits(col, c("Date", "POSIXlt", "POSIXlt")))
+                        if (inherits(col, c("Date", "POSIXlt", "POSIXct")))
                             col = convTimestamp(col)
                         return(col)
                     }))
@@ -339,15 +344,16 @@ echart.data.frame = function(
                 series_fun = getFromNamespace(paste0('series_', dfType$type[i]),
                                               'recharts2')
                 series_fun(seriesData[[i]], type = dfType[i,],
-                           subtype = lstSubtype[[i]])
+                           subtype = lstSubtype[[i]], fullMeta=metaData)
             })
-            out <- structure(list(series=lstSeries),
+            out = structure(list(series=lstSeries),
                              meta = seriesData, layout = layout)
+            # out = structure(seriesData, layout=layout)
         }else{  # with timeline
             time_metaData = lapply(seriesData, function(lst){
                 lapply(lst, function(df) {
                     lapply(df, function(col){
-                        if (inherits(col, c("Date", "POSIXlt", "POSIXlt")))
+                        if (inherits(col, c("Date", "POSIXlt", "POSIXct")))
                             col = convTimestamp(col)
                         return(col)
                     })
@@ -359,7 +365,7 @@ echart.data.frame = function(
                 series_fun(time_metaData[[t]], type = dfType[i,],
                            subtype = lstSubtype[[i]], fullMeta=metaData)
             })
-            out <- structure(list(series = lstSeries), meta = metaData[[t]])
+            out = structure(list(series = lstSeries), meta = metaData[[t]])
         }
 
         return(out)
@@ -371,26 +377,26 @@ echart.data.frame = function(
             options=lapply(1:length(uniT), .makeSeriesList)
         )
         if (!is.null(series))
-            params$baseOption$legend <- list(
+            params$baseOption$legend = list(
                 data = as.list(levels(as.factor(series[,1])))
             )
     }else{
         params = .makeSeriesList(NULL)
         if (!is.null(series))
-            params$legend <- list(
+            params$legend = list(
                 data = as.list(levels(as.factor(series[,1])))
             )
     }
 
     # ------------------dependency js------------------------
-    depJS <- list()
+    depJS = list()
     if (any(grepl('map_world|world_map', dfType$name)))
-        depJS <- append(depJS, list(
+        depJS = append(depJS, list(
             getDependency('world', 'htmlwidgets/lib/echarts/geo')))
-    mapJSName <- unique(c(mapShapeJS[,2][mapShapeJS[,1] %in% unlist(subtype)],
+    mapJSName = unique(c(mapShapeJS[,2][mapShapeJS[,1] %in% unlist(subtype)],
                    mapShapeJS[,2][mapShapeJS[,2] %in% unlist(subtype)]))
     if (length(mapJSName) > 0)
-        depJS <- append(depJS, lapply(mapJSName, getDependency,
+        depJS = append(depJS, lapply(mapJSName, getDependency,
                                       src='htmlwidgets/lib/echarts/geo'))
 
     # -------------------output-------------------------------
@@ -398,26 +404,26 @@ echart.data.frame = function(
         'echarts', params, width = NULL, height = NULL, package = 'recharts2',
         dependencies = depJS, preRenderHook = function(instance) { instance }
     )
-
+browser()
 
     if (hasT)
-        chart <- chart %>% setTimeline(show=TRUE, data=uniT)
-    if (!is.null(geoJSON)) chart$geoJSON <- geoJSON
+        chart = chart %>% setTimeline(show=TRUE, data=uniT)
+    if (!is.null(geoJSON)) chart$geoJSON = geoJSON
 
     if (any(dfType$type %in% c('map'))){
-        chart <- chart %>% setTooltip() %>% setToolbox() %>% setLegend()
+        chart = chart %>% setTooltip() %>% setToolbox() %>% setLegend()
     }else if (any(dfType$type %in% c('heatmap'))){
-        chart <- chart %>% setXAxis(show=FALSE) %>% setYAxis(show=FALSE) %>%
+        chart = chart %>% setXAxis(show=FALSE) %>% setYAxis(show=FALSE) %>%
             setGrid(borderWidth=0)
     }else if (any(dfType$type %in% c(
         'line', 'bar', 'scatter', 'candlestick', 'eventRiver'))){
         if (!any(dfType$type %in% c('eventRiver')))
-            chart <- chart %>% setYAxis(name = ylab[[1]])
-        chart <- chart %>% setXAxis(name = xlab[[1]]) %>%
+            chart = chart %>% setYAxis(name = ylab[[1]])
+        chart = chart %>% setXAxis(name = xlab[[1]]) %>%
             setTooltip() %>% setToolbox() %>% setLegend() %>%
             flipAxis(flip=any(grepl("flip", dfType$misc)))
     }else{
-        chart <- chart %>% setXAxis(show=FALSE) %>%
+        chart = chart %>% setXAxis(show=FALSE) %>%
             setYAxis(show=FALSE) %>% setGrid(borderWidth=0) %>%
             setTooltip() %>% setToolbox() %>% setLegend() %>%
             autoPolar(type=dfType)
@@ -512,6 +518,25 @@ matchLayout = function(param, layout){
     return(unlist(param))
 }
 
+arrangeCoordIndex = function(layout){
+    # layout must be outcome df of arrangeLayout()
+    # cols: [i, ifacet, irow, icol, row, col, series, type, subtype, coordSys]
+    layout$coordSys = as.factor(layout$coordSys)
+    layout = split(layout, layout$coordSys)
+    .arrangeIndex = function(df){
+        if (nrow(df)>0){
+            uniIdx = unique(df$ifacet)
+            o = data.frame(i = df$i, coordIdx = sapply(df$ifacet, function(x) {
+                which(uniIdx==x)-1})
+            )
+            return(o)
+        }
+    }
+    lstIdx = lapply(layout, .arrangeIndex)
+    bindIdx = do.call('rbind', lstIdx)
+    return(merge(layout, bindIdx, all.x=TRUE, sort=FALSE))
+}
+
 
 determineType = function(x, y) {
     if (is.numeric(x) && is.numeric(y)) return('scatter')
@@ -526,6 +551,8 @@ determineType = function(x, y) {
         return('histogram')
     if ((inherits(x, c("Date", "POSIXlt", "POSIXct")) && is.numeric(y)))
         return('curve')
+    if (is.character(x) && is.character(y))
+        return('bubble')
     message('The structure of x:')
     str(x)
     message('The structure of y:')
