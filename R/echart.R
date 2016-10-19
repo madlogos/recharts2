@@ -344,7 +344,8 @@ echart.data.frame = function(
                 series_fun = getFromNamespace(paste0('series_', dfType$type[i]),
                                               'recharts2')
                 series_fun(seriesData[[i]], type = dfType[i,],
-                           subtype = lstSubtype[[i]], fullMeta=metaData)
+                           subtype = lstSubtype[[i]], layout = layout[i,],
+                           fullMeta = metaData)
             })
             out = structure(list(series=lstSeries),
                              meta = seriesData, layout = layout)
@@ -363,7 +364,8 @@ echart.data.frame = function(
                 series_fun = getFromNamespace(paste0('series_', dfType$type[i]),
                                               'recharts2')
                 series_fun(time_metaData[[t]], type = dfType[i,],
-                           subtype = lstSubtype[[i]], fullMeta=metaData)
+                           subtype = lstSubtype[[i]], layout = layout[i,],
+                           fullMeta = metaData)
             })
             out = structure(list(series = lstSeries), meta = metaData[[t]])
         }
@@ -522,7 +524,7 @@ arrangeCoordIndex = function(layout){
     # layout must be outcome df of arrangeLayout()
     # cols: [i, ifacet, irow, icol, row, col, series, type, subtype, coordSys]
     layout$coordSys = as.factor(layout$coordSys)
-    layout = split(layout, layout$coordSys)
+    lstLayout = split(layout, layout$coordSys)
     .arrangeIndex = function(df){
         if (nrow(df)>0){
             uniIdx = unique(df$ifacet)
@@ -532,7 +534,7 @@ arrangeCoordIndex = function(layout){
             return(o)
         }
     }
-    lstIdx = lapply(layout, .arrangeIndex)
+    lstIdx = lapply(lstLayout, .arrangeIndex)
     bindIdx = do.call('rbind', lstIdx)
     return(merge(layout, bindIdx, all.x=TRUE, sort=FALSE))
 }
@@ -570,9 +572,12 @@ getDependency = function(type, src='htmlwidgets/lib/echarts') {
     )
 }
 
-getMeta = function(obj) {
+getAttr = function(obj, attr){
     if (inherits(obj, "echarts"))
-        attr(obj$x, 'meta', exact = TRUE)
+        attr(obj$x, attr, exact = TRUE)
     else
-        attr(obj, "meta", exact = TRUE)
+        attr(obj, attr, exact = TRUE)
 }
+
+getMeta = function(obj) getAttr(obj, 'meta')
+getLayout = function(obj) getAttr(obj, 'layout')

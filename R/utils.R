@@ -10,14 +10,14 @@ evalFormula = function(x, data) {
   eval(x[[2]], data, environment(x))
 }
 
-evalVar <- function(var, data){
+evalVar = function(var, data){
     stopifnot(inherits(var, 'formula'))
     if (var != ~NULL){
         evalFormula(var, data=data)
     }
 }
 
-evalVarArg <- function(x, data, simplify=FALSE, eval=TRUE){
+evalVarArg = function(x, data, simplify=FALSE, eval=TRUE){
     # eval var list to a data.frame
     # E.g.
     ## evalVarArg(Species, iris)
@@ -36,44 +36,44 @@ evalVarArg <- function(x, data, simplify=FALSE, eval=TRUE){
     if (length(substitute(x)) > 1){
         if (as.character(substitute(x)[[1]]) %in% c(
             'c', 'list', 'data.frame', 'vector', 'matrix')){
-            x <- arg1 <- as.list(substitute(x))
+            x = arg1 = as.list(substitute(x))
         }else if (as.character(substitute(x)[[1]] == '~')){
             if (grepl('^c|list|data\\.frame|vector|matrix\\(',
                       deparse(substitute(x)[[2]]))){
-                x <- arg1 <- as.list(substitute(x)[[2]])
-                x <- arg1 <- x[2:length(x)]
+                x = arg1 = as.list(substitute(x)[[2]])
+                x = arg1 = x[2:length(x)]
             }else{
-                x <- arg1 <- as.list(substitute(x))
+                x = arg1 = as.list(substitute(x))
             }
         }else{
-            x <- arg1 <- list(substitute(x))
+            x = arg1 = list(substitute(x))
         }
     }else{
-        x <- arg1 <- list(substitute(x))
+        x = arg1 = list(substitute(x))
     }
 
     for (i in seq_along(x)) {
         if (is.character(x[[i]]))
-            x[[i]] <- sub('^\\"(.*)\\"$' , '\\1', x[[i]])
+            x[[i]] = sub('^\\"(.*)\\"$' , '\\1', x[[i]])
         else {
             if (is.symbol(x[[i]]) || is.language(x[[i]])){
                 if (as.character(x[[i]] != '~'))
-                    x[[i]] <- as.formula(paste('~', deparse(x[[i]])))
+                    x[[i]] = as.formula(paste('~', deparse(x[[i]])))
             }
         }
     }
-    arg1 <- arg1[! (x %in% c(~c, ~list, ~data.frame) | as.character(x) == '`~`')]
-    x <- x[! (x %in% c(~c, ~list, ~data.frame) | as.character(x) == '`~`')]
+    arg1 = arg1[! (x %in% c(~c, ~list, ~data.frame) | as.character(x) == '`~`')]
+    x = x[! (x %in% c(~c, ~list, ~data.frame) | as.character(x) == '`~`')]
 
     # loop evalVar() and filter valid data.frame
-    out <- sapply(x, evalVar, data=data, simplify=FALSE)
-    nrows <- sapply(out, length)
-    out <- out[nrows==nrow(data)]
-    names <- as.character(arg1)
-    names <- names[nrows==nrow(data)]
-    names <- gsub("^ *~ *(.*)$|^c\\((.*)\\)$", "\\1", names)
-    out <- as.data.frame(out, stringsAsFactors=FALSE)
-    names(out) <- names
+    out = sapply(x, evalVar, data=data, simplify=FALSE)
+    nrows = sapply(out, length)
+    out = out[nrows==nrow(data)]
+    names = as.character(arg1)
+    names = names[nrows==nrow(data)]
+    names = gsub("^ *~ *(.*)$|^c\\((.*)\\)$", "\\1", names)
+    out = as.data.frame(out, stringsAsFactors=FALSE)
+    names(out) = names
     if (length(out) == 0){
         warning(paste("You yielded nothing by requiring", deparse(substitute(arg1)),
                       "out of", deparse(substitute(data))))
@@ -144,9 +144,9 @@ legacyMergeList = function(x, y) {
 
 # automatic labels from function arguments
 autoArgLabel = function(arg, auto) {
-    if (inherits(try(arg, TRUE), 'try-error')) arg <- deparse(substitute(arg))
+    if (inherits(try(arg, TRUE), 'try-error')) arg = deparse(substitute(arg))
     if (! inherits(arg, 'formula') && ! is.null(arg)) {
-        if (! grepl("^~", arg, ''))  arg <- as.formula(paste('~', arg))
+        if (! grepl("^~", arg, ''))  arg = as.formula(paste('~', arg))
     }
     if (is.null(arg)) return('')
     if (inherits(arg, 'formula')) return(deparse(arg[[2]]))
@@ -154,17 +154,17 @@ autoArgLabel = function(arg, auto) {
 }
 
 
-getSeriesPart <- function(chart, element=c(
+getSeriesPart = function(chart, element=c(
     'name', 'category', 'type', 'data', 'large', 'mapType'),
     drop=TRUE, fetch.all=FALSE,
 ...){
     ## get all the element names vector from an echarts object's series
     ## 'category' is special, it returns data series based on different chart types
     stopifnot(inherits(chart, 'echarts'))
-    element <- match.arg(element)
-    hasZ <- 'timeline' %in% names(chart$x)
+    element = match.arg(element)
+    hasZ = 'timeline' %in% names(chart$x)
     if (hasZ){
-        data <- try(sapply(seq_len(length(chart$x$options)), function(i) {
+        data = try(sapply(seq_len(length(chart$x$options)), function(i) {
             sapply(chart$x$options[[i]]$series, function(lst) {
                 if (fetch.all) ifnull(lst[['data']], NA)
                 else lst[['data']]})
@@ -173,7 +173,7 @@ getSeriesPart <- function(chart, element=c(
         ## natural elements
         if (element %in% c('name', 'type', 'data', 'large', 'mapType')){
             ## generic situations
-            obj <- try(sapply(seq_len(length(chart$x$options)), function(i) {
+            obj = try(sapply(seq_len(length(chart$x$options)), function(i) {
                 sapply(chart$x$options[[i]]$series, function(lst) {
                     if (fetch.all) ifnull(lst[[element]], NA)
                     else lst[[element]]})
@@ -183,36 +183,36 @@ getSeriesPart <- function(chart, element=c(
             if (chart$x$options[[1]]$series[[1]]$type %in%
                 c('funnel', 'pie', 'radar')){
                 if (element == 'data')
-                    obj <- unlist(data)[names(unlist(data))=='value']
+                    obj = unlist(data)[names(unlist(data))=='value']
             }else if (chart$x$options[[1]]$series[[1]]$type %in%
                       c('force', 'chord')){
                 if (element == 'data')
-                    obj <- data[names(data) %in% c('nodes', 'links')]
+                    obj = data[names(data) %in% c('nodes', 'links')]
             }
         ## special elements
         }else if (element %in% c('category')){
             if (chart$x$options[[1]]$series[[1]]$type %in%
                 c('funnel', 'pie', 'radar')){
-                obj <- unlist(data)[names(unlist(data))=='name']
+                obj = unlist(data)[names(unlist(data))=='name']
             }else if (chart$x$options[[1]]$series[[1]]$type %in%
                       c('force', 'chord')){
                 if ('categories' %in% names(chart$x$options[[1]]$series[[1]])){
-                    obj <- unlist(chart$x$options[[1]]$series[[1]]$categories)
+                    obj = unlist(chart$x$options[[1]]$series[[1]]$categories)
                 }else if ('data' %in% names(chart$x$options[[1]]$series[[1]])){
-                    obj <- unlist(chart$x$options[[1]]$series[[1]]$data)
+                    obj = unlist(chart$x$options[[1]]$series[[1]]$data)
                 }else{
-                    obj <- unlist(lapply(
+                    obj = unlist(lapply(
                         1:length(chart$x$options),function(opt) {
-                        z <- chart$x$options[[opt]]
-                        o <- lapply(1:length(z$series), function(s){
-                            source <- unlist(z$series[[s]]$links)
+                        z = chart$x$options[[opt]]
+                        o = lapply(1:length(z$series), function(s){
+                            source = unlist(z$series[[s]]$links)
                             return(source[names(source)=='source'])
                         })
                         return(unlist(o))
                     }))
                 }
             }else{
-                obj <- try(sapply(seq_len(length(chart$x$options)), function(i) {
+                obj = try(sapply(seq_len(length(chart$x$options)), function(i) {
                     sapply(chart$x$options[[i]]$series, function(lst) {
                         if (fetch.all) ifnull(lst[['name']], NA)
                         else lst[['name']]})
@@ -221,7 +221,7 @@ getSeriesPart <- function(chart, element=c(
         }
 
     }else{
-        data <- try(sapply(chart$x$series, function(lst) {
+        data = try(sapply(chart$x$series, function(lst) {
             if (fetch.all) ifnull(lst[['data']], NA)
             else lst[['data']]
         }, simplify=!drop), TRUE)
@@ -229,36 +229,36 @@ getSeriesPart <- function(chart, element=c(
         ## natural elements
         if (element %in% c('name', 'type', 'data', 'large', 'mapType')){
             ## generic situation
-            obj <- try(sapply(chart$x$series, function(lst) {
+            obj = try(sapply(chart$x$series, function(lst) {
                 if (fetch.all) ifnull(lst[[element]], NA)
                 else lst[[element]]
                 }, simplify=!drop), TRUE)
             ## special situation
             if (chart$x$series[[1]]$type %in% c('funnel', 'pie', 'radar')){
                 if (element == 'data')
-                    obj <- unlist(data)[names(unlist(data))=='value']
+                    obj = unlist(data)[names(unlist(data))=='value']
             }else if (chart$x$series[[1]]$type %in% c('force', 'chord')){
                 if (element == 'data')
-                    obj <- data[names(data) %in% c('nodes', 'links')]
+                    obj = data[names(data) %in% c('nodes', 'links')]
             }
         ## special elements
         }else if (element %in% c('category')){
             if (chart$x$series[[1]]$type %in% c('funnel', 'pie', 'radar')){
-                obj <- unlist(data)[names(unlist(data))=='name']
+                obj = unlist(data)[names(unlist(data))=='name']
             }else if (chart$x$series[[1]]$type %in% c('force', 'chord')){
                 if ('categories' %in% names(chart$x$series[[1]])){
-                    obj <- unlist(chart$x$series[[1]]$categories)
+                    obj = unlist(chart$x$series[[1]]$categories)
                 }else if ('data' %in% names(chart$x$series[[1]])){
-                    obj <- unlist(chart$x$series[[1]]$data)
+                    obj = unlist(chart$x$series[[1]]$data)
                 }else{
-                    obj <- unlist(lapply(1:length(chart$x$series),function(s) {
-                        o <- unlist(chart$x$series[[s]]$links)
+                    obj = unlist(lapply(1:length(chart$x$series),function(s) {
+                        o = unlist(chart$x$series[[s]]$links)
                         return(o[names(o)=='source'])
                     }))
                 }
 
             }else{
-                obj <- try(sapply(chart$x$series, function(lst) {
+                obj = try(sapply(chart$x$series, function(lst) {
                     if (fetch.all) ifnull(lst[['name']], NA)
                     else lst[['name']]
                 }, simplify=!drop), TRUE)
@@ -267,55 +267,55 @@ getSeriesPart <- function(chart, element=c(
     }
     if (hasZ && !drop && element %in% c(
         'name', 'type', 'category', 'large', 'mapType'))
-        obj <- matrix(obj, ncol=length(chart$x$options))
-    if (drop) obj <- unlist(obj)
+        obj = matrix(obj, ncol=length(chart$x$options))
+    if (drop) obj = unlist(obj)
     return(obj)
 }
 
 
-analyzeSeries <- function(chart, series){
+analyzeSeries = function(chart, series){
     stopifnot(inherits(chart, 'echarts'))
-    hasZ <- 'timeline' %in% names(chart$x)
-    newSeries <- NULL
+    hasZ = 'timeline' %in% names(chart$x)
+    newSeries = NULL
     # note: do not extract 'category'
-    lvlSeries <- getSeriesPart(chart, 'name', drop=FALSE, fetch.all=TRUE)
-    allSeries <- if (hasZ) apply(lvlSeries, 2, function(col) {
+    lvlSeries = getSeriesPart(chart, 'name', drop=FALSE, fetch.all=TRUE)
+    allSeries = if (hasZ) apply(lvlSeries, 2, function(col) {
         seq_len(length(col))}) else seq_along(lvlSeries)  # index series
-    dim(allSeries) <- dim(lvlSeries)
-    lvlSeries <- if (hasZ) lapply(1:ncol(lvlSeries), function(c) lvlSeries[,c]) else
+    dim(allSeries) = dim(lvlSeries)
+    lvlSeries = if (hasZ) lapply(1:ncol(lvlSeries), function(c) lvlSeries[,c]) else
         list(lvlSeries)
-    allSeries <- if (hasZ) lapply(1:ncol(allSeries), function(c) allSeries[,c]) else
+    allSeries = if (hasZ) lapply(1:ncol(allSeries), function(c) allSeries[,c]) else
         list(allSeries)
 
     if (is.null(series)){  # null, then apply to all series
-        lvlseries <- lvlSeries
-        series <- allSeries
+        lvlseries = lvlSeries
+        series = allSeries
     }else{
         if (is.numeric(series)){
             if (hasZ){
-                series <- lapply(allSeries, function(col) {
+                series = lapply(allSeries, function(col) {
                     intersect(series, col)
                 })
-                lvlseries <- lapply(seq_len(length(series)), function(j) {
+                lvlseries = lapply(seq_len(length(series)), function(j) {
                     lvlSeries[[j]][series[[j]]]
                 })
             }else{
-                series <- intersect(series, allSeries[[1]])
-                lvlseries <- lvlSeries[[1]][series]
+                series = intersect(series, allSeries[[1]])
+                lvlseries = lvlSeries[[1]][series]
             }
         }else{
-            newSeries <- unlist(series)[! unlist(series) %in% getSeriesPart(
+            newSeries = unlist(series)[! unlist(series) %in% getSeriesPart(
                 chart, 'name', fetch.all=TRUE)]
             if (hasZ){
-                lvlseries <- lapply(lvlSeries, function(col) {
+                lvlseries = lapply(lvlSeries, function(col) {
                     intersect(series, col)
                 })
-                series <- lapply(seq_len(length(lvlseries)), function(j){
+                series = lapply(seq_len(length(lvlseries)), function(j){
                     allSeries[[j]][which(lvlSeries[[j]] %in% lvlseries[[j]])]
                 })
             }else{
-                lvlseries <- intersect(series, lvlSeries[[1]])
-                series <- allSeries[[1]][which(lvlSeries[[1]] %in% lvlseries)]
+                lvlseries = intersect(series, lvlSeries[[1]])
+                series = allSeries[[1]][which(lvlSeries[[1]] %in% lvlseries)]
             }
         }
     }
@@ -324,13 +324,13 @@ analyzeSeries <- function(chart, series){
 }
 
 
-filterSeriesParts <- function(lst, type){
+filterSeriesParts = function(lst, type){
     stopifnot(type %in% c('line', 'bar', 'scatter', 'pie', 'radar', 'chord',
                           'force', 'map', 'gauge', 'funnel',
                           'treemap', 'wordCloud', 'heatmap'))
-    fixedParts <- c('type', 'name', 'tooltip', 'data', 'itemStyle', 'markPoint',
+    fixedParts = c('type', 'name', 'tooltip', 'data', 'itemStyle', 'markPoint',
                     'markLine', 'clickable', 'z', 'zlevel')
-    validParts <- switch(
+    validParts = switch(
         type,
         line=c('stack', 'xAxisIndex', 'yAxisIndex', 'symbol', 'symbolSize',
                'symbolRotate', 'showAllSymbol', 'smooth', 'dataFilter',
@@ -367,17 +367,17 @@ filterSeriesParts <- function(lst, type){
         heatmap=c('blurSize', 'gradientColors', 'minAlpha', 'valueScale',
                   'opacity')
         )
-    validParts <- c(fixedParts, validParts)
-    lst <- lst[intersect(names(lst), validParts)]
+    validParts = c(fixedParts, validParts)
+    lst = lst[intersect(names(lst), validParts)]
     return(lst)
 }
 
 
-getYFromEChart <- function(chart, ...){
+getYFromEChart = function(chart, ...){
     ## get y series data and extract the unique values vector
     stopifnot(inherits(chart, 'echarts'))
-    hasZ <- 'timeline' %in% names(chart$x)
-    .getY <- function(seriesData){
+    hasZ = 'timeline' %in% names(chart$x)
+    .getY = function(seriesData){
         if (! is.null(dim(seriesData))){
             if (dim(seriesData)[2] > 1){
                 return(seriesData[,2])
@@ -389,28 +389,43 @@ getYFromEChart <- function(chart, ...){
         }
     }
     if (hasZ){
-        y <- sapply(chart$x$options, function(lst){
-            Ys <- sapply(lst$series, function(l) {
+        y = sapply(chart$x$options, function(lst){
+            Ys = sapply(lst$series, function(l) {
                 return(.getY(l$data))
             })
             return(Ys)
         })
     }else{
-        y <- sapply(chart$x$series, function(lst) {
+        y = sapply(chart$x$series, function(lst) {
             return(.getY(lst$data))
         })
     }
-    uniY <- suppressWarnings(as.numeric(unique(unlist(y))))
+    uniY = suppressWarnings(as.numeric(unique(unlist(y))))
     return(uniY[!is.na(uniY)])
 }
 
+setCoordIndex = function(lst, coordName, coordIdx){
+    if (coordName == 'cartesian2d') {
+        lst$xAxisIndex = coordIdx
+        lst$yAxisIndex = coordIdx
+    }else if (coordName == 'polar'){
+        lst$polarIndex = coordIdx
+    }else if (coordName == 'geo'){
+        lst$geoIndex = coordIdx
+    }else if (coordName == 'singleAxis'){
+        lst$singleAxisIndex = coordIdx
+    }
+    return(lst)
+}
+
+
 #' @export
 #' @exportMethod + echarts
-"+.echarts" <- function(e1, e2){
+"+.echarts" = function(e1, e2){
     stopifnot(inherits(e1, 'echarts'))
     browser()
-    e1 <- deparse(substitute(e1))
-    e2 <- deparse(substitute(e2))
+    e1 = deparse(substitute(e1))
+    e2 = deparse(substitute(e2))
     return(paste(e1,'%>%',e2))
 }
 
@@ -454,14 +469,14 @@ getYFromEChart <- function(chart, ...){
 #' show_col(getColFromPal('tableau20'))
 #' show_col(getColFromPal('hc'))
 #' }
-getColFromPal <- function(palname=NULL, n=6){
-    brewer <- c(
+getColFromPal = function(palname=NULL, n=6){
+    brewer = c(
         'BrBG', 'PiYG', 'PRGn', 'PuOr', 'RdBu', 'RdGy', 'RdYlBu', 'RdYlGn',
         'Spectral', 'Accent', 'Dark2', 'Paired', 'Pastel1', 'Pastel2', 'Set1',
         'Set2', 'Set3', 'Blues', 'BuGn', 'BuPu', 'GnBu', 'Greens', 'Greys',
         'Oranges', 'OrRd', 'PuBu', 'PuBuGn', 'PuRd', 'Purples', 'RdPu', 'Reds',
         'YlGn', 'YlGnBu', 'YlOrBr', 'YlOrRd')
-    themePal <- list(
+    themePal = list(
         default=c(
             '#ff7f50', '#87cefa', '#da70d6', '#32cd32', '#6495ed', '#ff69b4',
             '#ba55d3', '#cd5c5c', '#ffa500', '#40e0d0', '#1e90ff', '#ff6347',
@@ -476,7 +491,7 @@ getColFromPal <- function(palname=NULL, n=6){
             "#C1232B", "#B5C334", "#FCCE10", "#E87C25", "#27727B", "#FE8463",
             "#9BCA63", "#FAD860", "#F3A43B", "#60C0DD", "#D7504B", "#C6E579",
             "#F4E001", "#F0805A", "#26C0C0"))
-    echartJS <- paste(readLines(
+    echartJS = paste(readLines(
         system.file('htmlwidgets/echarts.js', package='recharts'),
         encoding='UTF-8'), collapse='')
     lapply(c("blue", "dark", "gray", "green", "helianthus", "macarons2", "mint",
@@ -485,7 +500,7 @@ getColFromPal <- function(palname=NULL, n=6){
                      "^.*var ", theme, "Theme =.+?color:\\[(.+?)\\].*$"),
                      "\\1", echartJS), ')')))
              })
-    tableau <- data.frame(
+    tableau = data.frame(
         nick=c('tableau20', 'tableau10medium', 'tableaugray', 'tableauprgy',
                'tableaublrd', 'tableaugnor', 'tableaucyclic', 'tableau10light',
                'tableaublrd12', 'tableauprgy12', 'tableaugnor12', 'tableau',
@@ -495,12 +510,12 @@ getColFromPal <- function(palname=NULL, n=6){
               'bluered12', 'purplegray12', 'greenorange12', 'tableau10',
               'colorblind10', 'trafficlight'))
     ## echarts default
-    colObj <- themePal$default
-    if (! is.null(palname)) palname <- tolower(palname)
+    colObj = themePal$default
+    if (! is.null(palname)) palname = tolower(palname)
     if (! is.null(palname)){
         if (palname %in% paste0(
             "aetna", c('green','blue','teal','cranberry','orange','violet'))){
-            colObj <- switch(
+            colObj = switch(
                 palname,
                 aetnagreen=c("#7AC143", "#7D3F98", "#F47721", "#D20962",
                              "#00A78E", "#00BCE4", "#B8D936", "#EE3D94",
@@ -528,19 +543,19 @@ getColFromPal <- function(palname=NULL, n=6){
                               "#5E9732", "#CEA979", "#EF4135", "#7090A5")
             )
         }else if (palname %in% tolower(brewer)){
-            Palname <- brewer[which(tolower(brewer)==palname)]
-            maxcolors <- brewer.pal.info[row.names(brewer.pal.info)==Palname,
+            Palname = brewer[which(tolower(brewer)==palname)]
+            maxcolors = brewer.pal.info[row.names(brewer.pal.info)==Palname,
                                          "maxcolors"]
-            colObj <- brewer.pal(ifelse((maxcolors>n && n>2), n, maxcolors),
+            colObj = brewer.pal(ifelse((maxcolors>n && n>2), n, maxcolors),
                                  Palname)
         }else if (palname %in% tolower(paste0('_', c(
             "blue", "dark", "gray", "green", "helianthus", "macarons2", "mint",
             "red", "roma", "sakura", "shine", "vintage", "default", "macarons",
             "infographic")))){
-            colObj <- themePal[[sub("^_(.+)$", "\\1", palname)]]
+            colObj = themePal[[sub("^_(.+)$", "\\1", palname)]]
         }else{
             if (palname %in% c('rainbow', 'terrain', 'topo', 'heat', 'cm')){
-                colObj <- switch(palname,
+                colObj = switch(palname,
                                  rainbow=substr(rainbow(n), 1, 7),
                                  terrain=substr(terrain.colors(n), 1, 7),
                                  heat=substr(heat.colors(n), 1, 7),
@@ -549,64 +564,64 @@ getColFromPal <- function(palname=NULL, n=6){
                 )
             }else{
                 if (palname %in% c('pander')){
-                    colObj <- palette_pander(n)
+                    colObj = palette_pander(n)
                 }else if (palname %in% c('calc')){
-                    colObj <- ggthemes:::ggthemes_data$calc$colors
+                    colObj = ggthemes:::ggthemes_data$calc$colors
                 }else if (palname %in% c('ptol')) {
-                    colObj <- ptol_pal()(ifelse(n > 12, 12, n))
+                    colObj = ptol_pal()(ifelse(n > 12, 12, n))
                 }else if (palname %in% c('excel', "excel_fill", "excel_line",
                                          "excel_new")){
-                    palname <- unlist(strsplit(palname, "excel_"))[2]
-                    if (is.na(palname)) palname <- 'new'
-                    colObj <- ggthemes:::ggthemes_data$excel[[palname]]
+                    palname = unlist(strsplit(palname, "excel_"))[2]
+                    if (is.na(palname)) palname = 'new'
+                    colObj = ggthemes:::ggthemes_data$excel[[palname]]
                 }else if (palname %in% c('economist', 'economist_white',
                                          'economist_stata')){
-                    palname <- unlist(strsplit(palname,"economist_"))[2]
+                    palname = unlist(strsplit(palname,"economist_"))[2]
                     if (is.na(palname) || palname=='white') {
-                        colObj <- ggthemes:::ggthemes_data$economist$fg
+                        colObj = ggthemes:::ggthemes_data$economist$fg
                     } else {
-                        colObj <- ggthemes:::ggthemes_data$economist$stata$fg
+                        colObj = ggthemes:::ggthemes_data$economist$stata$fg
                     }
                 }else if (palname %in% c('darkunica', 'hc')){
-                    palname <- ifelse(palname == 'hc', 'default', palname)
-                    colObj <- ggthemes:::ggthemes_data$hc$palettes[[palname]]
+                    palname = ifelse(palname == 'hc', 'default', palname)
+                    colObj = ggthemes:::ggthemes_data$hc$palettes[[palname]]
                 }else if (palname %in% c('wsj', 'wsj_rgby', 'wsj_red_green',
                                          'wsj_black_green', 'wsj_dem_rep')){
-                    palname <- unlist(strsplit(palname,"wsj_"))[2]
-                    if (is.na(palname)) palname <- 'colors6'
-                    colObj <- ggthemes:::ggthemes_data$wsj$palettes[[palname]]
+                    palname = unlist(strsplit(palname,"wsj_"))[2]
+                    if (is.na(palname)) palname = 'colors6'
+                    colObj = ggthemes:::ggthemes_data$wsj$palettes[[palname]]
                 }else if (palname %in% c('stata', 'stata1', 'stata1r', 'statamono')){
-                    palname <- switch(palname, stata='stata', stata1='s1color',
+                    palname = switch(palname, stata='stata', stata1='s1color',
                                       stata1r='s1rcolor', statamono='mono')
                     if (palname == 'stata'){
-                        colObj <- ggthemes:::ggthemes_data$stata$colors
+                        colObj = ggthemes:::ggthemes_data$stata$colors
                     }else{
-                        colObj <- try(eval(parse(text=paste0(
+                        colObj = try(eval(parse(text=paste0(
                             "stata_pal('", palname, "')(15)"))), TRUE)
                     }
                 }else if (palname %in% c('few', 'few_dark', 'few_light')){
-                    palname <- unlist(strsplit(palname,"few_"))[2]
-                    if (is.na(palname)) palname <- "medium"
-                    colObj <- ggthemes:::ggthemes_data$few[[palname]]
+                    palname = unlist(strsplit(palname,"few_"))[2]
+                    if (is.na(palname)) palname = "medium"
+                    colObj = ggthemes:::ggthemes_data$few[[palname]]
                 }else if (palname %in%
                           c('fivethirtyeight','gdocs', 'colorblind', 'manyeyes',
                             '538')){
-                    if (palname == '538') palname <- 'fivethirtyeight'
-                    colObj <- ggthemes:::ggthemes_data[[palname]]
+                    if (palname == '538') palname = 'fivethirtyeight'
+                    colObj = ggthemes:::ggthemes_data[[palname]]
                 }else if (palname %in%
                           c('tableau20', 'tableau10medium', 'tableaugray', 'tableauprgy',
                             'tableaublrd', 'tableaugnor', 'tableaucyclic', 'tableau10light',
                             'tableaublrd12', 'tableauprgy12', 'tableaugnor12', 'tableau',
                             'tableaucolorblind', 'trafficlight')){
-                    palname <- tableau[tableau$nick==palname,"pal"]
-                    colObj <- try(eval(parse(text=paste0("tableau_color_pal(palette='",
+                    palname = tableau[tableau$nick==palname,"pal"]
+                    colObj = try(eval(parse(text=paste0("tableau_color_pal(palette='",
                                                          palname,"')(20)"))), TRUE)
                 }else if (palname %in%
                           c('solarized', 'solarized_red', 'solarized_yellow',
                             'solarized_orange', 'solarized_magenta', 'solarized_violet',
                             'solarized_blue', 'solarized_cyan', 'solarized_green')){
-                    palname <- unlist(strsplit(palname,"solarized_"))[2]
-                    colObj <- try(eval(parse(text=paste0(
+                    palname = unlist(strsplit(palname,"solarized_"))[2]
+                    colObj = try(eval(parse(text=paste0(
                         "solarized_pal('", ifnull(palname, 'blue'), "')(20)"))), TRUE)
                 }
             }
@@ -637,17 +652,17 @@ getColFromPal <- function(palname=NULL, n=6){
 #' show_col(getColors("terrain"))
 #' show_col(getColors(c('red', 'gold', 'skyblue')))
 #' }
-getColors <- function(palette, ...){
+getColors = function(palette, ...){
     # build a function to extract palette info
     # used for echartR
-    if ("n" %in% names(list(...))) n <- list(...)[['n']] else n <- 6
+    if ("n" %in% names(list(...))) n = list(...)[['n']] else n = 6
     if (length(palette)==1) {
         if (substr(palette, 1, 1)=="#"){
             if (nchar(palette) == 7 || nchar(palette) == 4) {
                 return(palette)
             }else{
-                palette <- paste0('0x', substring(palette, seq(2,8,2), seq(3,9,2)))
-                palette <- strtoi(palette)
+                palette = paste0('0x', substring(palette, seq(2,8,2), seq(3,9,2)))
+                palette = strtoi(palette)
                 return(rgba(palette))
             }
         }else if (palette %in% colors()){
@@ -655,11 +670,11 @@ getColors <- function(palette, ...){
         }else if (grepl('^rgba\\(', palette)){
             return(palette)
         }else{
-            palettes <- unlist(strsplit(palette, "[\\(\\)]", perl=TRUE))
+            palettes = unlist(strsplit(palette, "[\\(\\)]", perl=TRUE))
             if (length(palettes)==1){
                 return(getColFromPal(palettes[1], n))
             }else{
-                aetPal <- getColFromPal(palettes[1], as.numeric(palettes[2]))
+                aetPal = getColFromPal(palettes[1], as.numeric(palettes[2]))
                 if (as.numeric(palettes[2]) < length(aetPal)){
                     return(sample(aetPal, as.numeric(palettes[2])))
                 }else{
@@ -668,17 +683,17 @@ getColors <- function(palette, ...){
             }
         }
     }else if(length(palette)>1){
-        .convCol <- function(iPal){
+        .convCol = function(iPal){
             if (!is(try(col2rgb(iPal), TRUE), "try-error")){
                 if (substr(iPal, 1, 1) == "#"){
                     return(toupper(iPal))
                 }else{
-                    vecCol <- as.vector(col2rgb(iPal))
+                    vecCol = as.vector(col2rgb(iPal))
                     return(rgba(vecCol))
                 }
             }
         }
-        aetPal <- unlist(lapply(palette, .convCol))
+        aetPal = unlist(lapply(palette, .convCol))
         return(aetPal)
     }else{
         return(getColFromPal(NULL))
@@ -687,14 +702,14 @@ getColors <- function(palette, ...){
 
 
 # -------------Lazy functions to judge class-------------------
-isDate <- function(x, format=NULL){
+isDate = function(x, format=NULL){
     if (!is.null(format)){
         if (!is(try(as.Date(x),TRUE),"try-error")) TRUE else FALSE
     }else{
         if (!is(try(as.Date(x,format=format),TRUE),"try-error")) TRUE else FALSE
     }
 }
-isTime <- function(x, origin=NULL, tz='CST'){
+isTime = function(x, origin=NULL, tz='CST'){
     if (is.null(origin)){
         return(FALSE)
     }else{
@@ -702,11 +717,11 @@ isTime <- function(x, origin=NULL, tz='CST'){
     }
 }
 
-isLatin <- function(x){
-    if (is.factor(x)) x <- as.character(x)
+isLatin = function(x){
+    if (is.factor(x)) x = as.character(x)
     return(all(grepl("^[[:alnum:][:space:][:punct:]]+$", x, perl=TRUE)))
 }
-isFormula <- function(x){
+isFormula = function(x){
     return(inherits(x, 'formula'))
 }
 
@@ -723,21 +738,21 @@ isFormula <- function(x){
 #' # get c(0, 1, 4, 0)
 #' }
 #'
-iif <- function(x, y, cond=c(
-    'is.null', 'is.na', 'is.nan', 'is.blank', 'is.zero', 'missing')){
-    is.blank <- function(x)  length(x) == 0
-    is.zero <- function(x) x == 0
-    cond <- match.arg(cond)
-    o <- x
-    fun <- eval(parse(text=cond))
+iif = function(x, y, cond=c(
+    'is.null', 'is.na', 'is.nan', 'is.blank', 'is.zero')){
+    is.blank = function(x)  length(x) == 0
+    is.zero = function(x) x == 0
+    cond = match.arg(cond)
+    o = x
+    fun = eval(parse(text=cond))
     if (is.list(o)){
-        o <- lapply(o, function(l) {
-            l[fun(l)] <- y
+        o = lapply(o, function(l) {
+            l[fun(l)] = y
             return(l)
         })
     }else{
-        if (length(o) == 0) o <- y
-        else if (length(o[fun(o)]) > 0) o[fun(o)] <- y
+        if (length(o) == 0) o = y
+        else if (length(o[fun(o)]) > 0) o[fun(o)] = y
     }
 
     return(o)
@@ -745,34 +760,30 @@ iif <- function(x, y, cond=c(
 
 #' @export
 #' @rdname iif
-ifnull <- function(x, y) iif(x, y, 'is.null')
+ifnull = function(x, y) iif(x, y, 'is.null')
 
 #' @export
 #' @rdname iif
-ifna <- function(x, y) iif(x, y, 'is.na')
+ifna = function(x, y) iif(x, y, 'is.na')
 
 #' @export
 #' @rdname iif
-ifnan <- function(x, y) iif(x, y, 'is.nan')
+ifnan = function(x, y) iif(x, y, 'is.nan')
 
 #' @export
 #' @rdname iif
-ifblank <- function(x, y) iif(x, y, 'is.blank')
+ifblank = function(x, y) iif(x, y, 'is.blank')
 
 #' @export
 #' @rdname iif
-ifempty <- ifblank
+ifempty = ifblank
 
 #' @export
 #' @rdname iif
-ifzero <- function(x, y) iif(x, y, 'is.zero')
-
-#' @export
-#' @rdname iif
-ifmissing <- function(x, y) iif(x, y, 'missing')
+ifzero = function(x, y) iif(x, y, 'is.zero')
 
 #--------------------data struc changes---------------------------
-asEchartData <- function(x, na.string='-'){
+asEchartData = function(x, na.string='-'){
     # convert matrix/data.frame or vector to JSON-list lists
     # and convert NA to '-'
     if (!is.null(dim(x))){
@@ -792,28 +803,29 @@ asEchartData <- function(x, na.string='-'){
 }
 
 #' @importFrom digest sha1
-reElementId <- function(chart, seed=NULL){
+reElementId = function(chart, seed=NULL){
+    # generate random elemendId for the echarts object
     stopifnot(inherits(chart, 'echarts'))
     if (!is.null(seed)) if (is.numeric(seed)) set.seed(seed)
     elementId = paste0('echarts-', sha1(
         paste0(convTimestamp(Sys.time()), Sys.info()[['nodename']],
                sample(10000000000, 1))))
-    txt <- paste(deparse(chart, backtick=TRUE, control='all'), collapse='')
-    txt <- gsub("(document\\.getElementById\\()([^\\)]+?)\\)",
+    txt = paste(deparse(chart, backtick=TRUE, control='all'), collapse='')
+    txt = gsub("(document\\.getElementById\\()([^\\)]+?)\\)",
                 paste0("\\1'", elementId, "'\\)"), txt)
-    chart <- eval(parse(text=txt))
-    chart$elementId <- elementId
-    class(chart) <- c('echarts','htmlwidget')
+    chart = eval(parse(text=txt))
+    chart$elementId = elementId
+    class(chart) = c('echarts','htmlwidget')
     return(chart)
 }
 
 
-convTimestamp <- function(time, from='R', to='JS'){
+convTimestamp = function(time, from='R', to='JS'){
     stopifnot(inherits(time, c("numeric", "Date", "POSIXct", "POSIXlt")))
     if (from=='R' && to=='JS'){
-        time <- as.POSIXlt(time, orig="1970-01-01")
-        gmtoff <- ifnull(as.POSIXlt(Sys.time(), orig='1970-01-01')$gmtoff, 0)
-        time <- as.numeric(time) - gmtoff
+        time = as.POSIXlt(time, orig="1970-01-01")
+        gmtoff = ifnull(as.POSIXlt(Sys.time(), orig='1970-01-01')$gmtoff, 0)
+        time = as.numeric(time) - gmtoff
         return(time * 1000)
     }
     if (from=='JS' && to=='R')
@@ -837,12 +849,12 @@ convTimestamp <- function(time, from='R', to='JS'){
 #' rgba(123, 123, 124, 0.5) # return 'rgba(123,123,124,0.5)'
 #' rgba(123, 123, 124)  # return '#7B7B7C'
 #' }
-rgba <- function(vecrgb, ...){
-    if (is.matrix(vecrgb) && dim(vecrgb) == c(3,1)) vecrgb <- vecrgb[,1]
+rgba = function(vecrgb, ...){
+    if (is.matrix(vecrgb) && dim(vecrgb) == c(3,1)) vecrgb = vecrgb[,1]
     ## vecrgb is yielded from col2rgb()
 
-    if (is.list(vecrgb)) rgb <- as.vector(unlist(vecrgb))
-    if (length(vecrgb) == 1) vecrgb <- c(vecrgb, unlist(list(...)))
+    if (is.list(vecrgb)) rgb = as.vector(unlist(vecrgb))
+    if (length(vecrgb) == 1) vecrgb = c(vecrgb, unlist(list(...)))
     if (min(vecrgb, na.rm=TRUE)<0 || max(vecrgb, na.rm=TRUE)>255) {
         stop("All elements should be numeric 0-255!")
     }
@@ -860,28 +872,28 @@ rgba <- function(vecrgb, ...){
     }
 }
 
-checkColorDiff <- function(col1, col2, ...){
+checkColorDiff = function(col1, col2, ...){
     stopifnot((col1 %in% colors() || grepl("#[[:xdigit:]]{6}", col1) ||
                    grepl("^rgba\\(", col1)) &&
               (col2 %in% colors() || grepl("#[[:xdigit:]]{6}", col2) ||
                    grepl("^rgba\\(", col2)))
     if (grepl("^rgba\\(", col1)){
-        col1 <- as.numeric(unlist(strsplit(col1, "[\\(,\\)]")[[1]][2:5]))
-        col1 <- rgb(col1[1], col1[2], col1[3], col1[4]*255, max=255)
+        col1 = as.numeric(unlist(strsplit(col1, "[\\(,\\)]")[[1]][2:5]))
+        col1 = rgb(col1[1], col1[2], col1[3], col1[4]*255, max=255)
     }else{
-        col1 <- getColors(col1)
+        col1 = getColors(col1)
     }
     if (grepl("^rgba\\(", col2)){
-        col2 <- as.numeric(unlist(strsplit(col2, "[\\(,\\)]")[[1]][2:5]))
-        col2 <- rgb(col2[1], col2[2], col2[3], col2[4]*255, max=255)
+        col2 = as.numeric(unlist(strsplit(col2, "[\\(,\\)]")[[1]][2:5]))
+        col2 = rgb(col2[1], col2[2], col2[3], col2[4]*255, max=255)
     }else{
-        col2 <- getColors(col2)
+        col2 = getColors(col2)
     }
 
-    bright1 <- sum(c(299, 587, 114) * col2rgb(col1))/1000
-    bright2 <- sum(c(299, 587, 114) * col2rgb(col2))/1000
-    brightDiff <- abs(bright1 - bright2)
-    hueDiff <- sum(abs(col2rgb(col1, TRUE) - col2rgb(col2, TRUE)))
+    bright1 = sum(c(299, 587, 114) * col2rgb(col1))/1000
+    bright2 = sum(c(299, 587, 114) * col2rgb(col2))/1000
+    brightDiff = abs(bright1 - bright2)
+    hueDiff = sum(abs(col2rgb(col1, TRUE) - col2rgb(col2, TRUE)))
     return(data.frame('Diff' = c(brightDiff, hueDiff),
                       'Suffiecient'=c(brightDiff >= 125, hueDiff >= 500),
                       row.names=c('Bright', 'Hue')))
@@ -906,72 +918,72 @@ checkColorDiff <- function(col1, col2, ...){
 #'
 #' @seealso \code{\link{hsv}}, \code{\link{rgb2hsv}}, \code{\link{rgb}},
 #' @examples
-#' col <- sapply(list('o', 'h', 'l', 's', 'b', c('h', 'l'), c('h', 's'),
+#' col = sapply(list('o', 'h', 'l', 's', 'b', c('h', 'l'), c('h', 's'),
 #'               c('l', 's'), c('h', 's', 'l')), function(mode) {
 #'               return(invertColor('darkred', mode))
 #'         })
 #' library(scales)
 #' show_col(c('darkred', unlist(col)))
 #'
-invertColor <- function(color, mode=c('bw', 'opposite', 'hue', 'saturation',
+invertColor = function(color, mode=c('bw', 'opposite', 'hue', 'saturation',
                                       'lumination', ''),
                         ...){
-    if (! grepl("^rgba\\(", color)) col <- color <- getColors(color)
+    if (! grepl("^rgba\\(", color)) col = color = getColors(color)
     if (grepl("^rgba\\(", color)){
-        col <- as.numeric(unlist(strsplit(col, "[\\(,\\)]")[[1]][2:5]))
-        col <- rgb(col[1], col[2], col[3], col[4]*255, max=255)
+        col = as.numeric(unlist(strsplit(col, "[\\(,\\)]")[[1]][2:5]))
+        col = rgb(col[1], col[2], col[3], col[4]*255, max=255)
     }
-    modeAbbrev <- tolower(substr(mode, 1, 1))
-    rgb <- col2rgb(col)
-    hsv <- rgb2hsv(rgb)
+    modeAbbrev = tolower(substr(mode, 1, 1))
+    rgb = col2rgb(col)
+    hsv = rgb2hsv(rgb)
 
     if ('b' %in% modeAbbrev){  # black and white invert
-        bright <- sum(c(299, 587, 114) * rgb) / 1000
+        bright = sum(c(299, 587, 114) * rgb) / 1000
         if (bright >= 128) return("#000000")
         else return("#FFFFFF")
     }else if ('o' %in% modeAbbrev) {
-        rgb_neg <- rep(255, 3) - rgb
+        rgb_neg = rep(255, 3) - rgb
         return(rgb(rgb_neg[1], rgb_neg[2], rgb_neg[3], max=255))
     }else{
         if ('h' %in% modeAbbrev)
-            hsv[1] <- ifelse(hsv[1] > 0.5, hsv[1] - 0.5, hsv[1] + 0.5)
+            hsv[1] = ifelse(hsv[1] > 0.5, hsv[1] - 0.5, hsv[1] + 0.5)
         if ('s' %in% modeAbbrev)
-            hsv[2] <- 1 - hsv[2]
+            hsv[2] = 1 - hsv[2]
         if ('l' %in% modeAbbrev)
-            hsv[3] <- 1 - hsv[3]
+            hsv[3] = 1 - hsv[3]
         return(hsv(hsv[1], hsv[2], hsv[3]))
     }
 }
 
-autoMultiPolarChartLayout <- function(n, col.max=5, gap=5, top=5, bottom=5,
+autoMultiPolarChartLayout = function(n, col.max=5, gap=5, top=5, bottom=5,
                                       left=5, right=5){
-    layouts <- data.frame(row=ceiling(n/(1:col.max)), col=1:col.max)
-    layouts$empty <- abs(layouts$row * layouts$col - n)
-    layouts$diff <- abs(layouts$row - layouts$col)
-    layouts$defects <- layouts$empty + layouts$diff
-    layouts <- layouts[order(layouts$defects, layouts$diff, layouts$empty,
+    layouts = data.frame(row=ceiling(n/(1:col.max)), col=1:col.max)
+    layouts$empty = abs(layouts$row * layouts$col - n)
+    layouts$diff = abs(layouts$row - layouts$col)
+    layouts$defects = layouts$empty + layouts$diff
+    layouts = layouts[order(layouts$defects, layouts$diff, layouts$empty,
                              layouts$row), ]
-    rows <- layouts[1, 'row']
-    cols <- layouts[1, 'col']
+    rows = layouts[1, 'row']
+    cols = layouts[1, 'col']
 
     ## calculate the sizing params
-    centers <- expand.grid(left + ((1:cols)*2 - 1) * ((100-left-right)/2) /cols,
+    centers = expand.grid(left + ((1:cols)*2 - 1) * ((100-left-right)/2) /cols,
                            top + ((1:rows)*2 - 1) * ((100-top-bottom)/2) /rows)
-    centers <- centers[1:n,]
-    radius <- (min(100-left-right, 100-top-bottom) -
+    centers = centers[1:n,]
+    radius = (min(100-left-right, 100-top-bottom) -
                    gap * (max(rows, cols) -1)) / max(rows, cols)
     return(list(rows=rows, cols=cols, centers=centers, radius=radius))
 }
 
-parseTreeNodes <- function(data, name='name', parent='parent'){
-    name <- as.character(substitute(name))
-    parent <- as.character(substitute(parent))
-    name <- name[length(name)]
-    parent <- parent[length(parent)]
+parseTreeNodes = function(data, name = 'name', parent = 'parent'){
+    name = as.character(substitute(name))
+    parent = as.character(substitute(parent))
+    name = name[length(name)]
+    parent = parent[length(parent)]
 
-    names(data)[which(names(data) == name)] <- 'name'
-    names(data)[which(names(data) == parent)] <- 'parent'
-    validColNames <- c('name', 'value', 'itemStyle', 'symbol', 'symbolSize')
+    names(data)[which(names(data) == name)] = 'name'
+    names(data)[which(names(data) == parent)] = 'parent'
+    validColNames = c('name', 'value', 'itemStyle', 'symbol', 'symbolSize')
     if (!all(names(data) %in% c('parent', validColNames)))
         stop("treeNode data only accepts column names of ",
              paste(c('parent', validColNames), ', '),
@@ -980,33 +992,33 @@ parseTreeNodes <- function(data, name='name', parent='parent'){
     if (!any(is.na(data$parent)))
         stop('parent columns must contain at least one NA to be the root.')
 
-    colnames <- names(data)
-    data <- data.frame(lapply(names(data), function(col){
+    colnames = names(data)
+    data = data.frame(lapply(names(data), function(col){
         col = if (grepl('value|Size', col)) as.numeric(data[,col]) else
             as.character(data[,col])
         return(col)
     }), stringsAsFactors=FALSE)
-    names(data) <- colnames
+    names(data) = colnames
 
-    orderBase <- data[which(data$name == data$parent),]
+    orderBase = data[which(data$name == data$parent),]
 
-    .getRecursiveNodes <- function(nodeName){
-        if (is.na(nodeName)) dt <- data[which(is.na(data$parent)),]
-        else dt <- data[which(data$parent %in% nodeName),]
+    .getRecursiveNodes = function(nodeName){
+        if (is.na(nodeName)) dt = data[which(is.na(data$parent)),]
+        else dt = data[which(data$parent %in% nodeName),]
 
-        children <- unique(as.character(dt$name))
+        children = unique(as.character(dt$name))
 
-        out <- unname(apply(dt, 1, function(row){
+        out = unname(apply(dt, 1, function(row){
             if (nrow(dt) > 0){
-                o <- lapply(intersect(names(dt), validColNames), function(col){
+                o = lapply(intersect(names(dt), validColNames), function(col){
                     if (grepl('value|Size', col))
                         as.numeric(unname(row[col]))
                     else
                         as.character(unname(row[col]))
                 })
-                names(o) <- intersect(names(dt), validColNames)
+                names(o) = intersect(names(dt), validColNames)
                 if (nrow(data[which(data$parent %in% row['name']),]) > 0)
-                    o$children <- .getRecursiveNodes(as.character(row['name']))
+                    o$children = .getRecursiveNodes(as.character(row['name']))
                 return(o)
             }
         }))
@@ -1016,10 +1028,10 @@ parseTreeNodes <- function(data, name='name', parent='parent'){
     return(.getRecursiveNodes(NA))
 }
 
-matchSubtype <- function(subtype, lstSubtype, mode=c('any', 'all', 'detail',
+matchSubtype = function(subtype, lstSubtype, mode=c('any', 'all', 'detail',
                                                      'which')){
     stopifnot(length(subtype)==1)
-    mode <- match.arg(mode)
+    mode = match.arg(mode)
     if (mode=='any'){
         any(sapply(lstSubtype, function(x) subtype %in% x))
     }else if (mode == 'all'){
@@ -1031,9 +1043,9 @@ matchSubtype <- function(subtype, lstSubtype, mode=c('any', 'all', 'detail',
     }
 }
 
-getJSElementSize <- function(chart, element=c('width', 'height')){
+getJSElementSize = function(chart, element=c('width', 'height')){
     stopifnot(inherits(chart, 'echarts'))
-    element <- match.arg(element)
+    element = match.arg(element)
     if (is.null(chart$elementId))
         stop("The echarts object has not been assigned a fixed elementId!")
     return(paste0("document.getElementById('", chart$elementId,"').",
@@ -1060,7 +1072,7 @@ getJSElementSize <- function(chart, element=c('width', 'height')){
 #'  8(l, b, v) \tab 7(l, b, h) \tab 6(c, b, h) \tab 5(r, b, h) \tab 4(r, b, v)
 #' }
 #' @rdname position.orient
-vecPos <- function(pos){
+vecPos = function(pos){
     TblPos=as.data.frame(rbind(c("right",  "top",    "horizontal"),
                                c("right",  "top",    "vertical"),
                                c("right",  "middle", "vertical"),
@@ -1075,7 +1087,7 @@ vecPos <- function(pos){
                                c("center", "top",    "horizontal")
                                ),
                          stringsAsFactors=FALSE)
-    names(TblPos) <- c("x","y","z")
+    names(TblPos) = c("x","y","z")
     return(as.vector(unlist(TblPos[pos,])))
 }
 
@@ -1092,7 +1104,7 @@ vecPos <- function(pos){
 #' clockPos("right", "top", "vertical") ## returns 2
 #' }
 #' @rdname position.orient
-clockPos <- function(x, y, orient){
+clockPos = function(x, y, orient){
     TblPos=as.data.frame(rbind(c("right",  "top",    "horizontal"),
                                c("right",  "top",    "vertical"),
                                c("right",  "middle", "vertical"),
@@ -1107,13 +1119,13 @@ clockPos <- function(x, y, orient){
                                c("center", "top",    "horizontal")
     ),
     stringsAsFactors=FALSE)
-    names(TblPos) <- c("x","y","z")
+    names(TblPos) = c("x","y","z")
     return(which(TblPos$x==x & TblPos$y==y & TblPos$z==orient))
 }
 
-exchange <- function(x, y){
-    a <- x
-    x <- y
-    y <- a
+exchange = function(x, y){
+    a = x
+    x = y
+    y = a
     return(list(x, y))
 }

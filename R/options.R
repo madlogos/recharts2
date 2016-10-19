@@ -1480,7 +1480,7 @@ setTooltip = function(chart, series=NULL, timeslots=NULL, trigger=NULL,
 
     eval(parse(text=paste(lhs, "<-", rhs)))
 
-    return(chart %>% reElementId())
+    return(chart)
 }
 
 #' @export
@@ -1742,7 +1742,7 @@ addGeoCoord = function(chart, geoCoord=NULL, mode=c('add', 'overide')){
                     chart$x$series[[1]]$geoCoord = lstGeoCoord
         }
     }
-    return(chart %>% reElementId())
+    return(chart)
 }
 
 #' @export
@@ -1892,7 +1892,7 @@ addHeatmap = function(chart, series=NULL, timeslots=NULL, data=NULL,
             }
         }
     }
-    return(chart %>% reElementId())
+    return(chart)
 }
 
 #' @export
@@ -1957,7 +1957,7 @@ addNameMap = function(chart, nameMap, mode=c('add', 'overide')){
                     chart$x$series[[1]]$nameMap, lstNameMap)
         chart$x$series[[1]]$nameMap = lstNameMap
     }
-    return(chart %>% reElementId())
+    return(chart)
 }
 
 #' @export
@@ -2224,7 +2224,7 @@ addMarkLine = function(
             }
         }
     }
-    return(chart %>% reElementId())
+    return(chart)
 }
 
 #' @export
@@ -2492,7 +2492,7 @@ addMarkPoint = function(
             }
         }
     }
-    return(chart %>% reElementId())
+    return(chart)
 }
 
 #' @export
@@ -2847,7 +2847,7 @@ setSeries = function(chart, series=NULL, timeslots=NULL, ...){
             }
         }
     }
-    return(chart %>% reElementId())
+    return(chart)
 }
 
 

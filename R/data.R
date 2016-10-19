@@ -1,16 +1,18 @@
 #' @importFrom data.table melt
-series_scatter <- function(lst, type, subtype, fullMeta, return=NULL, ...){
-    # g = echartr(mtcars, wt, mpg, am)
+series_scatter <- function(lst, type, subtype, layout, fullMeta, return=NULL, ...){
+    # g = echart(mtcars, wt, mpg, am)
+
     if (is.null(lst$x) || is.null(lst$y))
         stop('scatter charts need x and y!')
+    if (is.character(lst$x) && is.character(lst$y) && is.null(lst$weight))
+        stop('if x and y are characters, then numeric weight is needed.')
     lst <- mergeList(list(weight=NULL, series=NULL), lst)
-    #if (!is.numeric(lst$x[,1])) stop('x and y must be numeric')
     data <- cbind(lst$y[,1], lst$x[,1])
 
     if (!is.null(lst$weight)){  # weight as symbolSize
         data <- cbind(data, lst$weight[,1])
-        minWeight <- min(abs(lst$weight[,1]), na.rm=TRUE)
-        maxWeight <- max(abs(lst$weight[,1]), na.rm=TRUE)
+        minWeight <- min(abs(fullMeta$weight[,1]), na.rm=TRUE)
+        maxWeight <- max(abs(fullMeta$weight[,1]), na.rm=TRUE)
         range <- maxWeight - minWeight
         folds <- maxWeight / minWeight
         if (abs(folds) < 50){  # max/min < 50, linear
@@ -39,8 +41,8 @@ series_scatter <- function(lst, type, subtype, fullMeta, return=NULL, ...){
         obj <- list(type = type$type[1], data = asEchartData(data[,2:1]))
         ## only fetch col 1-2 of data, col 3 is series
     }else{
-        obj <- list(type = type$type[i],
-                    data = asEchartData(data[[i]][,c(2:1, 3)]))
+        obj <- list(type = type$type,
+                    data = asEchartData(data[,c(2:1, 3)]))
             if (grepl('bubble', type$misc)) obj$symbolSize <- jsSymbolSize
             # line, weight links to line width
             if (type$type == 'line' && !is.null(lineWidths)){
@@ -54,14 +56,15 @@ series_scatter <- function(lst, type, subtype, fullMeta, return=NULL, ...){
                 )
             }  ## fetch col 1-2 and 3 (x, y, weight)
     }
-    if (!is.null(lst$series)) obj$name = lst$series[1,1]
+    if (!is.null(lst$series)) obj$name = unname(lst$series[1,1])
+    obj = setCoordIndex(obj, layout$coordSys, layout$coordIdx)
 
     return(obj[intersect(names(obj), ifnull(return, names(obj)))])
 }
 
-series_bar <- function(lst, type, subtype, return=NULL, ...){
+series_bar <- function(lst, type, subtype, layout, fullMeta, return=NULL, ...){
     # example:
-    # echartr(mtcars, row.names(mtcars), mpg,
+    # echart(mtcars, row.names(mtcars), mpg,
     #     series=factor(am,labels=c('Manual','Automatic')),
     #     type=c('hbar','scatter'))
     lst <- mergeList(list(series=NULL), lst)
@@ -160,10 +163,10 @@ series_bar <- function(lst, type, subtype, return=NULL, ...){
     return(obj[intersect(names(obj), ifnull(return, names(obj)))])
 }
 
-series_line = function(lst, type, subtype, return=NULL, ...) {
+series_line = function(lst, type, subtype, layout, fullMeta, return=NULL, ...) {
     # Example:
-    # g=echartr(airquality, as.character(Day), Temp,t=Month, type='curve')
-    # g=echartr(airquality, as.character(Day), Temp,t=Month, type='area_smooth')
+    # g=echart(airquality, as.character(Day), Temp,t=Month, type='curve')
+    # g=echart(airquality, as.character(Day), Temp,t=Month, type='area_smooth')
     lst <- mergeList(list(series=NULL), lst)
     data <- cbind(lst$y[,1], lst$x[,1])
 
@@ -235,9 +238,9 @@ series_line = function(lst, type, subtype, return=NULL, ...) {
     return(obj[intersect(names(obj), ifnull(return, names(obj)))])
 }
 
-series_k <- function(lst, type, subtype, return=NULL, ...){
+series_k <- function(lst, type, subtype, layout, fullMeta, return=NULL, ...){
     # Example:
-    # g=echartr(stock, date, c(open, close, low, high), type='k')
+    # g=echart(stock, date, c(open, close, low, high), type='k')
 
     data <- cbind(lst$y[,1], lst$x[,1])
     obj <- list(list(name='Stock', type=type$type[1], data=asEchartData(lst$y[,1:4])))
@@ -248,15 +251,15 @@ series_k <- function(lst, type, subtype, return=NULL, ...){
     }
 }
 
-series_pie <- function(lst, type, subtype, return=NULL, ...){
+series_pie <- function(lst, type, subtype, layout, fullMeta, return=NULL, ...){
     # Example:
-    # g=echartr(iris, Species, Sepal.Width, type='pie')
-    # g=echartr(mtcars, am, mpg, gear, type='pie')
-    # g=echartr(mtcars, y=mpg, series=gear,type='ring')
+    # g=echart(iris, Species, Sepal.Width, type='pie')
+    # g=echart(mtcars, am, mpg, gear, type='pie')
+    # g=echart(mtcars, y=mpg, series=gear,type='ring')
     ## ring_info
     # ds=data.frame(q=c('68% feel good', '29% feel bad', '3% have no feelings'),
     #               a=c(68, 29, 3))
-    # g=echartr(ds, q, a, type='ring_info')
+    # g=echart(ds, q, a, type='ring_info')
     # dev.width=paste0("document.getElementById('", g$elementId,"').offsetWidth")
     # dev.height=paste0("document.getElementById('", g$elementId,"').offsetHeight")
     # g %>% setLegend(pos=c('center','top','vertical'),
@@ -401,20 +404,20 @@ series_pie <- function(lst, type, subtype, return=NULL, ...){
 
 series_funnel <- series_pie
 
-series_radar <- function(lst, type, subtype, return=NULL, ...){
+series_radar <- function(lst, type, subtype, layout, fullMeta, return=NULL, ...){
     # Example:
     # cars = mtcars[c('Merc 450SE','Merc 450SL','Merc 450SLC'),
     #               c('mpg','disp','hp','qsec','wt','drat')]
     # cars$model <- rownames(cars)
     # cars <- data.table::melt(cars, id.vars='model')
     # names(cars) <- c('model', 'indicator', 'Parameter')
-    # echartr(cars, indicator, Parameter, model, type='radar') %>%
+    # echart(cars, indicator, Parameter, model, type='radar') %>%
     #        setTitle('Merc 450SE  vs  450SL  vs  450SLC')
-    # echartr(cars, c(indicator, model), Parameter, type='radar', sub='fill')
-    # echartr(cars, c(indicator, model), Parameter, type='target') %>%
+    # echart(cars, c(indicator, model), Parameter, type='radar', sub='fill')
+    # echart(cars, c(indicator, model), Parameter, type='target') %>%
     #         setSymbols('none')
     #
-    # echartr(cars, indicator, Parameter, t=model, type='radar')
+    # echart(cars, indicator, Parameter, t=model, type='radar')
     # ----------------
     #
     # carstat = data.table::dcast(data.table::data.table(mtcars),
@@ -428,7 +431,7 @@ series_radar <- function(lst, type, subtype, return=NULL, ...){
     # fullData <- data.frame(expand.grid(levels(carstat$indicator),
     #             levels(carstat$am), unique(carstat$carb)))
     # carstat <- merge(fullData, carstat, all.x=TRUE)
-    # echartr(carstat, c(indicator, am),
+    # echart(carstat, c(indicator, am),
     #         Parameter, carb, t=gear, type='radar')
 
     # x[,1] is x, x[,2] is series; y[,1] is y; series[,1] is polorIndex
@@ -482,13 +485,13 @@ series_radar <- function(lst, type, subtype, return=NULL, ...){
     return(obj[intersect(names(obj), ifnull(return, names(obj)))])
 }
 
-series_force <- function(lst, type, subtype, return=NULL, ...){
+series_force <- function(lst, type, subtype, layout, fullMeta, return=NULL, ...){
     # x: node/link, x2: link, series: series/relation, y: weight/value
     # df with x2 NA is nodes, !NA is links. If all !NA, no categories are linked
     # or x: name column, y: matrix
     # Example
-    # echartr(yu, c(source, target), value, relation, type='force')
-    # echartr(deutsch, c(club, player), weight, role, type='chord')
+    # echart(yu, c(source, target), value, relation, type='force')
+    # echart(deutsch, c(club, player), weight, role, type='chord')
     if (is.null(lst$y) || is.null(lst$x))
         stop('radar charts need x and y!')
     if (is.null(lst$series)){
@@ -605,7 +608,7 @@ series_force <- function(lst, type, subtype, return=NULL, ...){
 
 series_chord <- series_force
 
-series_gauge <- function(lst, type, subtype, return=NULL, ...){
+series_gauge <- function(lst, type, subtype, layout, fullMeta, return=NULL, ...){
     if (is.null(lst$x) || is.null(lst$y))
         stop('gauge charts need x and y!')
     data <- data.frame(y=lst$y[,1], x=lst$x[,1])
@@ -647,11 +650,11 @@ series_gauge <- function(lst, type, subtype, return=NULL, ...){
     return(oout[intersect(names(out), ifnull(return, names(out)))])
 }
 
-series_map <- function(lst, type, subtype, return=NULL, ...){
+series_map <- function(lst, type, subtype, layout, fullMeta, return=NULL, ...){
     # x[,1] x; x[,2] series; y[,1] value; y[,2] selected; series[,1] multi-maps
 
     # Example:
-    # echartr(NULL, type="map_china")
+    # echart(NULL, type="map_china")
     x <- if (is.null(lst$x)) NA else lst$x[,1]
     series <- if (is.null(lst$x)) '' else if (ncol(lst$x) > 1) lst$x[,2] else ''
     y <- if (is.null(lst$y)) NA else lst$y[,1]
@@ -759,7 +762,7 @@ series_map <- function(lst, type, subtype, return=NULL, ...){
 }
 
 
-series_wordCloud <- function(lst, type, subtype, return=NULL, ...){
+series_wordCloud <- function(lst, type, subtype, layout, fullMeta, return=NULL, ...){
     # does not accept series
     if (is.null(lst$y) || is.null(lst$x))
         stop('wordCloud charts need x and y!')
@@ -794,7 +797,7 @@ series_wordCloud <- function(lst, type, subtype, return=NULL, ...){
     return(o[intersect(names(o), ifnull(return, names(o)))])
 }
 
-series_eventRiver <- function(lst, type, subtype, return=NULL, ...){
+series_eventRiver <- function(lst, type, subtype, layout, fullMeta, return=NULL, ...){
     # x: slice time, event name, slice title, slice url, slice img;
     # y: slice value, event weight;  series: series, series weight
     if (is.null(lst$x) || is.null(lst$y)) stop('eventRiver chart needs x and y!')
@@ -855,7 +858,7 @@ series_eventRiver <- function(lst, type, subtype, return=NULL, ...){
     return(out[intersect(names(out), ifnull(return, names(out)))])
 }
 
-series_venn <- function(lst, type, return=NULL, ...){
+series_venn <- function(lst, type, layout, fullMeta, return=NULL, ...){
     if (is.null(lst$x) || is.null(lst$y)) stop('venn charts need x and y!')
     if (nrow(lst$y) < 3) stop('y has to have 3 rows with the last row be intersection.')
     data <- data.frame(y=lst$y[,1], x=lst$x[,1])[1:3,]
@@ -872,7 +875,7 @@ series_venn <- function(lst, type, return=NULL, ...){
     return(o[intersect(names(o), ifnull(return, names(o)))])
 }
 
-series_tree <- function(lst, type, subtype, return=NULL, ...){
+series_tree <- function(lst, type, subtype, layout, fullMeta, return=NULL, ...){
     if (is.null(lst$x) || is.null(lst$y))
         stop("tree/treemap charts need x and y!")
     if (ncol(lst$x) < 2 && any(type$type == 'tree'))
@@ -939,14 +942,14 @@ series_tree <- function(lst, type, subtype, return=NULL, ...){
 series_treemap <- series_tree
 
 #' @importFrom data.table between
-series_heatmap <- function(lst, type, subtype, return=NULL, ...){
+series_heatmap <- function(lst, type, subtype, layout, fullMeta, return=NULL, ...){
     # data = rbind(data.frame(lng=100+rnorm(100,0, 1)*600,
     #        lat=150+rnorm(100,0, 1)*50, y=abs(rnorm(100,0,1))),
     # data.frame(lng=rnorm(200,0, 1)*1000,
     #        lat=rnorm(200,0, 1)*800, y=abs(rnorm(200,0,1))),
     # data.frame(lng=400+rnorm(20,0, 1)*300,
     #        lat=5+rnorm(20,0, 1)*10, y=abs(rnorm(100,0,1))))
-    # echartr(data,lng=lng,lat=lat,y=y,type='heatmap')
+    # echart(data,lng=lng,lat=lat,y=y,type='heatmap')
     if (is.null(lst$lng) || is.null(lst$lat) || is.null(lst$y))
         stop("heatmap needs lng, lat and y!")
     if (!all(data.table::between(lst$y[,1], 0, 1)))
