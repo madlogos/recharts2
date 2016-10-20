@@ -56,7 +56,7 @@ series_scatter <- function(lst, type, subtype, layout, fullMeta, return=NULL, ..
                 )
             }  ## fetch col 1-2 and 3 (x, y, weight)
     }
-    if (!is.null(lst$series)) obj$name = unname(lst$series[1,1])
+    if (!is.null(lst$series)) obj$name = as.character(lst$series[1,1])
     obj = setCoordIndex(obj, layout$coordSys, layout$coordIdx)
 
     return(obj[intersect(names(obj), ifnull(return, names(obj)))])

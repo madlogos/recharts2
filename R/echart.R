@@ -300,8 +300,14 @@ echart.data.frame = function(
                                         function(i) which(dfType[i,]))))
     }
     dfType = validChartTypes[typeIdx,]
+    # modify df layout
     layout$coordSys = dfType$coordSys
     layout = arrangeCoordIndex(layout)
+    layout$xAxisIdx = layout$yAxisIdx = NA
+    layout$xAxisIdx[layout$coordSys == 'cartesian2d'] =
+        layout$yAxisIdx[layout$coordSys == 'cartesian2d'] =
+        layout$coordIdx[layout$coordSys == 'cartesian2d']
+    # subtype
     lstSubtype = rep('', nrow(layout))
     if (!missing(subtype)) if (length(subtype) > 0)
         lstSubtype = lapply(1:nrow(layout), function(i){
@@ -415,18 +421,16 @@ browser()
     if (any(dfType$type %in% c('map'))){
         chart = chart %>% setTooltip() %>% setToolbox() %>% setLegend()
     }else if (any(dfType$type %in% c('heatmap'))){
-        chart = chart %>% setXAxis(show=FALSE) %>% setYAxis(show=FALSE) %>%
+        chart = chart %>% autoAxis(TRUE, FALSE) %>%
             setGrid(borderWidth=0)
     }else if (any(dfType$type %in% c(
-        'line', 'bar', 'scatter', 'candlestick', 'eventRiver'))){
-        if (!any(dfType$type %in% c('eventRiver')))
-            chart = chart %>% setYAxis(name = ylab[[1]])
-        chart = chart %>% setXAxis(name = xlab[[1]]) %>%
+        'line', 'bar', 'scatter', 'candlestick'))){
+        chart = chart %>% autoAxis() %>%
             setTooltip() %>% setToolbox() %>% setLegend() %>%
             flipAxis(flip=any(grepl("flip", dfType$misc)))
     }else{
-        chart = chart %>% setXAxis(show=FALSE) %>%
-            setYAxis(show=FALSE) %>% setGrid(borderWidth=0) %>%
+        chart = chart %>% autoAxis(showMainAxis=FALSE) %>%
+            setGrid(borderWidth=0) %>%
             setTooltip() %>% setToolbox() %>% setLegend() %>%
             autoPolar(type=dfType)
     }
@@ -478,9 +482,12 @@ arrangeLayout = function(series=NULL, facet=NULL){
         return(layout)
     }))
     layout$series = factor(layout$series, levels=series)
+    layout$iseries = sapply(layout$series, function(s){
+        which(unique(layout$series) == s)
+    })
     layout = layout[order(layout$irow, layout$icol, layout$ser),]
     rownames(layout) = layout$i = seq_len(nrow(layout))
-    return(layout[,c('i', 'ifacet', 'irow', 'icol', 'row', 'col', 'series')])
+    return(layout[,c('i', 'ifacet', 'irow', 'icol', 'row', 'col', 'iseries', 'series')])
 }
 
 matchLayout = function(param, layout){
