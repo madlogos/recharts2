@@ -190,9 +190,9 @@ setAxis = function(
     if (missing(position)) {
         position = switch(which, x = 'bottom', y = 'left', x1 = 'top',
                           y1 = 'right', y2 = 'right')
+    }else{
+        position = match.arg(position)
     }
-    if (which %in% 'x1' && missing(position)) position = 'top'
-    if (which %in% c('y1', 'y2') && missing(position)) position = 'right'
 
     if (!is.null(axisLabel$formatter))
         if (!is.list(axisLabel$formatter)){
@@ -206,7 +206,7 @@ setAxis = function(
     if (hasT) x = chart$x$baseOption else x = chart$x
     i = paste0(whichAx, 'Axis')
     o = list(
-        type = match.arg(type), show = show, position = match.arg(position),
+        type = match.arg(type), show = show, position = position,
         inverse = inverse, name = name, nameLocation = match.arg(nameLocation),
         nameTextStyle = nameTextStyle, nameGap = nameGap, nameRotate = nameRotate,
         boundaryGap = boundaryGap, min = min, max = max, scale = scale,
@@ -220,7 +220,8 @@ setAxis = function(
 
     # only merge the arguments that are not missing, e.g. eAxis(min = 0) will
     # only overide 'min' but will not overide the 'name' attribute
-    a = intersect(names(as.list(match.call()[-1])), names(o))
+    a = intersect(c('position', 'axisLine', 'scale', 'show',
+                    names(as.list(match.call()[-1]))), names(o))
     if (which %in% c('x', 'x1')){
         for (j in unique(layout[targetAxRows, 'xAxisIdx']))
             x[[i]][[j+1]] = mergeList(x[[i]][[j+1]], o[a])
@@ -258,29 +259,39 @@ autoAxis = function(chart, hasSubAxis = TRUE, showMainAxis = TRUE, ...) {
     if (nrow(layout) == 0) return(chart)
     hasT = 'timeline' %in% names(chart$x)
     lstXAxis = lapply(unique(layout$xAxisIdx), function(x){
-        list(gridIndex = x, show = showMainAxis, type =
-                 if (hasT) axisType(getMeta(chart)[[1]][[x+1]]$x[,1], 'x') else
-                     axisType(getMeta(chart)[[x+1]]$x[,1], 'x'))
+        list(gridIndex = x, show = showMainAxis, type = if (hasT)
+            axisType(getMeta(chart)[[1]][[x+1]]$x[,1], 'x') else
+                axisType(getMeta(chart)[[x+1]]$x[,1], 'x'),
+            axisLine = list(onZero=FALSE), scale = TRUE
+        )
     })
     if (hasSubAxis)
         lstXAxis = append(lstXAxis, lapply(unique(layout$xAxisIdx), function(x){
             list(gridIndex = x, show = FALSE, type = if (hasT)
                 axisType(getMeta(chart)[[1]][[x+1]]$x[,1], 'x') else
-                axisType(getMeta(chart)[[x+1]]$x[,1], 'x'))
+                    axisType(getMeta(chart)[[x+1]]$x[,1], 'x'),
+                axisLine = list(onZero=FALSE), scale = TRUE
+            )
         }))
     lstYAxis = lapply(unique(layout$yAxisIdx), function(x){
-        list(gridIndex = x, show = showMainAxis, type =
-                 if (hasT) axisType(getMeta(chart)[[1]][[x+1]]$y[,1], 'y') else
-                     axisType(getMeta(chart)[[x+1]]$y[,1], 'y'))
+        list(gridIndex = x, show = showMainAxis, type = if (hasT)
+            axisType(getMeta(chart)[[1]][[x+1]]$y[,1], 'y') else
+                axisType(getMeta(chart)[[x+1]]$y[,1], 'y'),
+            axisLine = list(onZero=FALSE), scale = TRUE
+        )
     })
     if (hasSubAxis)
         lstYAxis = append(lstYAxis, lapply(unique(layout$yAxisIdx), function(x){
-            list(gridIndex = x, show = FALSE, type =if (hasT)
+            list(gridIndex = x, show = FALSE, type = if (hasT)
                 axisType(getMeta(chart)[[1]][[x+1]]$y[,1], 'y') else
-                axisType(getMeta(chart)[[x+1]]$y[,1], 'y'))
+                    axisType(getMeta(chart)[[x+1]]$y[,1], 'y'),
+                axisLine = list(onZero=FALSE), scale = TRUE
+            )
         }))
     lstGrid = lapply(unique(layout$coordIdx), function(x){
-        list()
+        rec = layout[layout$coordIdx == x,][1,]
+        return(list(top=rec$top, left=rec$left, width=rec$width, height=rec$height,
+                    containLabel=TRUE))
     })
     # set axis
     if (hasT){
@@ -295,26 +306,33 @@ autoAxis = function(chart, hasSubAxis = TRUE, showMainAxis = TRUE, ...) {
 #' @export
 #' @rdname setAxis
 setYAxis = function(chart, ...) {  # set primary y axis
-    setAxis(chart, which = 'y', ...)
+    setAxis(chart, which = 'y', position = 'left', ...)
 }
 
 #' @export
 #' @rdname setAxis
 setY1Axis = function(chart, ...) {  # set secondary y axis
-    setAxis(chart, which = 'y1', ...)
+    setAxis(chart, which = 'y1', position = 'right', ...)
 }
 
 #' @export
 #' @rdname setAxis
 setXAxis = function(chart, ...) {  # set primary x axis
-    setAxis(chart, which = 'x', ...)
+    setAxis(chart, which = 'x', position = 'bottom', ...)
 }
 
 #' @export
 #' @rdname setAxis
 setX1Axis = function(chart, ...) {  # set secondary x axis
-    setAxis(chart, which = 'x1', ...)
+    setAxis(chart, which = 'x1', position = 'top', ...)
 }
+
+#' @export
+#' @rdname setAxis
+setY2Axis = function(chart, ...) {  # set secondary x axis
+    setAxis(chart, which = 'y2', position = 'right', offset = 20, ...)
+}
+
 
 axisType = function(data, which = c('x', 'y')) {
     if (is.numeric(data) || is.null(data)) return('value')
@@ -426,7 +444,7 @@ setGrid = function(chart, index=1, left=NULL, top=60, right='10%', bottom=60,
         show = show, z  = z, zlevel = zlevel
     ))
 
-    lstGrid = lstGrid[intersect(names(match.call()), names(lstGrid))]
+    lstGrid = lstGrid[intersect(as.list(match.call())[-1], names(lstGrid))]
 
     ## wrap up
     if (hasT){

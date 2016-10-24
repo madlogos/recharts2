@@ -168,7 +168,16 @@ echart.data.frame = function(
     layout$type = if (is.null(type)) NA else matchLayout(tolower(type), layout)
     layout$subtype = if (is.null(subtype)) NA else
         matchLayout(tolower(subtype), layout)
-
+    if ('facet' %in% dataVars) if (length(facetvarRaw)>1)
+        auto.layout = autoMultiChartLayout(
+            max(layout$ifacet), max(layout$irow), max(layout$icol))
+    else auto.layout = autoMultiChartLayout(max(layout$ifacet))
+    facets = data.frame(ifacet=unique(layout$ifacet))
+    facets[,c('centerX', 'centerY')] = auto.layout$centers
+    facets[,c('radius', 'width', 'height')] = list(
+        auto.layout$radius,  auto.layout$width, auto.layout$height)
+    facets[,c('left', 'top', 'right', 'bottom')] = auto.layout$grids
+    layout = merge(layout, facets, by='ifacet', sort=FALSE)
     # -----------------split df to lists---------------------
     .makeMetaDataList = cmpfun(function(df) {
         # generate metaData, df wrapped in lists
@@ -187,19 +196,20 @@ echart.data.frame = function(
 
     .splitFacetSeries = cmpfun(function(df){
         # inherit dataVars, facetvarRaw, seriesvarRaw
+        # note: the splitted list should be consistent with df layout
         facetvarRaw = get0("facetvarRaw")
         seriesvarRaw = get0("seriesvarRaw")
         if ('facet' %in% dataVars){
             if ('series' %in% dataVars){
                 out = split(df, if (length(facetvarRaw) > 1) {
-                    list(df[,facetvarRaw[1]], df[,facetvarRaw[2]],
-                         df[,seriesvarRaw[1]])
+                    list(df[,seriesvarRaw[1]], df[,facetvarRaw[2]],
+                         df[,facetvarRaw[1]])
                 }else{
-                    list(df[,facetvarRaw[1]], df[,seriesvarRaw[1]])
+                    list(df[,seriesvarRaw[1]], df[,facetvarRaw[1]])
                 })
             }else{
                 out = split(df, if (length(facetvarRaw) > 1) {
-                    list(df[,facetvarRaw[1]], df[,facetvarRaw[2]])
+                    list(df[,facetvarRaw[2]], df[,facetvarRaw[1]])
                 }else{
                     list(df[,facetvarRaw[1]])
                 })

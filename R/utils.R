@@ -419,15 +419,6 @@ setCoordIndex = function(lst, coordName, coordIdx){
 }
 
 
-#' @export
-#' @exportMethod + echarts
-"+.echarts" = function(e1, e2){
-    stopifnot(inherits(e1, 'echarts'))
-    browser()
-    e1 = deparse(substitute(e1))
-    e2 = deparse(substitute(e2))
-    return(paste(e1,'%>%',e2))
-}
 
 #-----Palettes and others---------
 #' Get The Colors Vector From A Named Palette
@@ -730,7 +721,7 @@ isFormula = function(x){
 #' @param x A vector/list to replace
 #' @param y The vector to be replaced with
 #' @param cond Condition string, could be 'is.null', 'is.na', 'is.nan', 'is.blank',
-#' 'is.zero', or 'missing'
+#' or 'is.zero'
 #' @export
 #' @examples
 #' \dontrun{
@@ -974,6 +965,65 @@ autoMultiPolarChartLayout = function(n, col.max=5, gap=5, top=5, bottom=5,
                    gap * (max(rows, cols) -1)) / max(rows, cols)
     return(list(rows=rows, cols=cols, centers=centers, radius=radius))
 }
+
+autoMultiChartLayout = function(
+    n, row=NULL, col=NULL, col.max=5, vgap=5, hgap=5, top=8, bottom=8,
+    left=6, right=6, width=100, height=100, mode=c('percent', 'value'),
+    out=c('asis', 'pixel')
+){
+    mode = match.arg(mode)  # if mode is 'percent', all params should be 0-100
+    out = match.arg(out)
+    if (mode == 'percent'){
+        stopifnot(all(sapply(list(
+            hgap, vgap, top, bottom, left, right, width, height
+            ), data.table::between, lower=0, upper=100))
+        )
+    }
+    if (is.numeric(row) && is.numeric(col)){
+        rows = row
+        cols = col
+    }else{
+        layouts = data.frame(row=ceiling(n/(1:col.max)), col=1:col.max)
+        layouts$empty = abs(layouts$row * layouts$col - n)
+        layouts$diff = abs(layouts$row - layouts$col)
+        layouts$defects = layouts$empty + layouts$diff
+        layouts = layouts[order(layouts$defects, layouts$diff, layouts$empty,
+                                layouts$row), ]
+        rows = layouts[1, 'row']
+        cols = layouts[1, 'col']
+    }
+    ## calculate the sizing params
+    centers = expand.grid(left + ((1:cols)*2 - 1) * ((width-left-right)/2) /cols,
+                          top + ((1:rows)*2 - 1) * ((height-top-bottom)/2) /rows)
+    names(centers) = c('x', 'y')
+    centers = centers[1:n,]
+    radius = (min(width-left-right, height-top-bottom) -
+                  max(vgap, hgap) * (max(rows, cols) -1)) / max(rows, cols)
+    widths = (width-left-right-hgap*(cols-1)) / cols
+    heights = (height-top-bottom-vgap*(rows-1)) / rows
+    grids = expand.grid(left + ((1:cols)-1) * (widths+hgap),
+                        top + ((1:rows)-1) * (heights+vgap))
+    names(grids) = c('left', 'top')
+    grids$right = grids$left + widths
+    grids$bottom = grids$top + heights
+    grids = grids[1:n, ]
+    ## return params
+    if (out=='asis'){
+        centers = sapply(centers, paste0, '%')
+        radius = paste0(radius, '%')
+        widths = paste0(widths, '%')
+        heights = paste0(heights, '%')
+        grids = sapply(grids, paste0, '%')
+        return(structure(list(rows=rows, cols=cols, centers=centers, radius=radius,
+                              width=widths, height=heights, grids=grids),
+                         mode=mode))
+    }else{
+        return(structure(list(rows=rows, cols=cols, centers=centers, radius=radius,
+                              width=widths, height=heights, grids=grids),
+                         mode=mode))
+    }
+}
+
 
 parseTreeNodes = function(data, name = 'name', parent = 'parent'){
     name = as.character(substitute(name))
