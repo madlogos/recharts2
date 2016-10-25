@@ -50,11 +50,11 @@ When an echart object is generated, you can modify it by setting dataZoom using
 }
 \examples{
 \dontrun{
-g <- iris \%>\% echartR(x=Sepal.Width, y=Petal.Width, series=Species, type='scatter')
+g = iris \%>\% echartR(x=Sepal.Width, y=Petal.Width, series=Species, type='scatter')
 g \%>\% setDataZoom(fill=rgba(c(col2rgb('gold'), 0.3)),
                   handle=rgba(c(col2rgb('gold'), 1)))
 
-g1 <- iris \%>\% echartR(x=Sepal.Width, y=Petal.Width, z=Species, type='scatter')
+g1 = iris \%>\% echartR(x=Sepal.Width, y=Petal.Width, t=Species, type='scatter')
 g1 \%>\% setDataZoom(fill=rgba(c(col2rgb('lightgreen'), 0.2)),
                   handle=rgba(c(col2rgb('darkgreen'), 0.5)))
 }

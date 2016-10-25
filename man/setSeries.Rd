@@ -14,7 +14,7 @@ setSeries(chart, series = NULL, timeslots = NULL, ...)
 is not in the existing series list, it will be treated as new}
 
 \item{timeslots}{vector of timeslots, either name or index of timeline variable
-\code{z}. But you cannot use \code{z} as \code{timeslots} for short in \code{setSeries}.}
+\code{t}.}
 
 \item{...}{The params to pass to the echarts object for modification. \cr
 The generic params include:
@@ -252,7 +252,7 @@ you decide to \code{setSeries}.
 }
 \examples{
 \dontrun{
-g <- echartr(iris, Sepal.Width, Petal.Width, Species)
+g = echartr(iris, Sepal.Width, Petal.Width, Species)
 g \%>\% setSeries(series=3, symbol='emptyCircle')
 }
 }

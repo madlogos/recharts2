@@ -29,7 +29,7 @@ Inverted hex color
 Invert A Color to Its Conplementary Color
 }
 \examples{
-col <- sapply(list('o', 'h', 'l', 's', 'b', c('h', 'l'), c('h', 's'),
+col = sapply(list('o', 'h', 'l', 's', 'b', c('h', 'l'), c('h', 's'),
               c('l', 's'), c('h', 's', 'l')), function(mode) {
               return(invertColor('darkred', mode))
         })

@@ -37,7 +37,7 @@ overideMP(chart, ...)
 If set NULL, then apply the \code{markPoint} to all the series.}
 
 \item{timeslots}{Numeric (timeslot index) or character (timeslot name), numeric preferred.
-If set NULL, then apply the \code{markPoint} to all the timeslots. You can use \code{z}
+If set NULL, then apply the \code{markPoint} to all the timeslots. You can use \code{t}
 for short.}
 
 \item{data}{Data.frame, the data of the \code{markPoint}s. It must contain the
@@ -93,7 +93,7 @@ Add \code{markPoint} to An Echarts Object
 }
 \examples{
 \dontrun{
-g <- echartr(iris, Sepal.Width, Petal.Width, Species)
+g = echartr(iris, Sepal.Width, Petal.Width, Species)
 g \%>\% addMP(c('setosa', 'versicolor'), data=data.frame(name=c('max', 'min'),
            type=c('max', 'min'), series=c('setosa', 'versicolor')))
 }

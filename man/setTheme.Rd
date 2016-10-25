@@ -121,7 +121,7 @@ You should write in the format below: \cr
 }
 \examples{
 \dontrun{
-g <- echartR(iris, Sepal.Width, Petal.Width, series=Species)
+g = echartR(iris, Sepal.Width, Petal.Width, series=Species)
 
 # Set themes
 ## pre-installed themes
@@ -139,12 +139,12 @@ g \%>\% setTheme("shine")
 g \%>\% setTheme("vintage")
 
 ## self-defined themes
-theme <- list(color=c("#7AC143", "#7D3F98", "#F47721", "#D20962", "#00A78E",
+theme = list(color=c("#7AC143", "#7D3F98", "#F47721", "#D20962", "#00A78E",
               "#00BCE4", "#B8D936", "#EE3D94"), backgroundColor="#fef8ef")
 g \%>\% setTheme(theme)
 
 ## Misc aethetics
-g <- echartR(iris, x=Sepal.Width, y=Petal.Width, series=Species, type='scatter')
+g = echartR(iris, x=Sepal.Width, y=Petal.Width, series=Species, type='scatter')
 g \%>\% setTheme(palette='hc')
 g \%>\% setTheme(palette=c('red', 'gold', 'deepskyblue'), 'gray95',
         animationHoldColor='red', animationEasing='CircularOut',

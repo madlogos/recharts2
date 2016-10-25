@@ -3,7 +3,6 @@
 \name{iif}
 \alias{ifblank}
 \alias{ifempty}
-\alias{ifmissing}
 \alias{ifna}
 \alias{ifnan}
 \alias{ifnull}
@@ -11,8 +10,7 @@
 \alias{iif}
 \title{If-else Replacement Function For Vectors}
 \usage{
-iif(x, y, cond = c("is.null", "is.na", "is.nan", "is.blank", "is.zero",
-  "missing"))
+iif(x, y, cond = c("is.null", "is.na", "is.nan", "is.blank", "is.zero"))
 
 ifnull(x, y)
 
@@ -25,8 +23,6 @@ ifblank(x, y)
 ifempty(x, y)
 
 ifzero(x, y)
-
-ifmissing(x, y)
 }
 \arguments{
 \item{x}{A vector/list to replace}
@@ -34,7 +30,7 @@ ifmissing(x, y)
 \item{y}{The vector to be replaced with}
 
 \item{cond}{Condition string, could be 'is.null', 'is.na', 'is.nan', 'is.blank',
-'is.zero', or 'missing'}
+or 'is.zero'}
 }
 \description{
 If-else Replacement Function For Vectors

@@ -59,10 +59,10 @@ When an echart object is generated, you can modify it by setting dataRange using
 }
 \examples{
 \dontrun{
-g <- iris \%>\% echartR(x=Sepal.Width, y=Petal.Width, series=Species, type='scatter')
+g = iris \%>\% echartR(x=Sepal.Width, y=Petal.Width, series=Species, type='scatter')
 g \%>\% setDataRange()
 
-g1 <- iris \%>\% echartR(x=Sepal.Width, y=Petal.Width, z=Species, type='scatter')
+g1 = iris \%>\% echartR(x=Sepal.Width, y=Petal.Width, t=Species, type='scatter')
 g1 \%>\% setDataRange(valueRange=c(0, 2.5))
 }
 }

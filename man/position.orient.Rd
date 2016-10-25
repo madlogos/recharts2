@@ -14,7 +14,7 @@ clockPos(x, y, orient)
 
 \item{x}{String, 'left', 'right' or 'center'}
 
-\item{y}{String, 'top', 'center' or 'vertical'}
+\item{y}{String, 'top', 'middle' or 'vertical'}
 
 \item{orient}{String, 'horizontal' or 'vertical'}
 }

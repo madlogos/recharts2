@@ -152,10 +152,10 @@ Contained in an itemStyle object are \cr
 }
 \examples{
 \dontrun{
-lab <- labelStyle(show=TRUE, position='inside',
+lab = labelStyle(show=TRUE, position='inside',
                 textStyle=textStyle(color='red'))
-styLine <- lineStyle(color='#fff', width=4, shadowBlur=5)
-itemStyle <- list(normal=itemStyle(lineStyle=styLine, label=lab),
+styLine = lineStyle(color='#fff', width=4, shadowBlur=5)
+itemStyle = list(normal=itemStyle(lineStyle=styLine, label=lab),
                   emphasis=itemStyle(lineStyle=styLine, label=lab)
               )
 }

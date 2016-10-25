@@ -79,7 +79,7 @@ You can use symbols in \code{\link{setSymbols}}.}
 
 \item{symbolSize}{The size of the symbols. Default 4.}
 
-\item{currentIndex}{The current index position, in correspondance with \code{z}.
+\item{currentIndex}{The current index position, in correspondance with \code{t}.
 It is used to show specific timeline slices. Default 0.}
 
 \item{data}{The data list of the timeline, also used as timeline data label.
@@ -91,25 +91,25 @@ Default NULL.}
 A modified echarts object
 }
 \description{
-Set timeline of Echarts when the echarts object contains timeline slices (z). \cr
+Set timeline of Echarts when the echarts object contains timeline slices (t). \cr
 When an echart object is generated, you can modify it by setting tooltip using
 \code{\link{\%>\%}}.
 }
 \examples{
 \dontrun{
 ## type = "number"
-iris$tag <- 1 + as.integer(row.names(iris)) \%\% 3
-iris <- iris[order(iris$tag),]
-g <- echartR(iris, Sepal.Width, Petal.Width, series=Species, z=tag)
+iris$tag = 1 + as.integer(row.names(iris)) \%\% 3
+iris = iris[order(iris$tag),]
+g = echartR(iris, Sepal.Width, Petal.Width, series=Species, t=tag)
 g \%>\% setTimeline(y2=30, symbol='emptyCircle',
                   autoPlay=FALSE, data=c('tag 1', 'tag 2', 'tag 3'))
 
 ## type = "time"
 ### You have to use a js function to reformat the label if you want to change
 ### the label text
-iris$date <- as.Date(paste0("2013-1-", 1 + as.integer(row.names(iris)) \%\% 5))
-iris <- iris[order(iris$date),]
-g <- echartR(iris, Sepal.Width, Petal.Width, series=Species, z=date)
+iris$date = as.Date(paste0("2013-1-", 1 + as.integer(row.names(iris)) \%\% 5))
+iris = iris[order(iris$date),]
+g = echartR(iris, Sepal.Width, Petal.Width, series=Species, t=date)
 g \%>\% setTimeline(y2=30, symbol='emptyCircle', autoPlay=FALSE, label=list(
       formatter=JS(paste('function(s) {return s.slice(8,10) + "\\u65e5";}'))))
 }

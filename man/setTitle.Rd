@@ -61,7 +61,7 @@ subtextStyle}, you need to pack the user-defined lists in a list.
 \examples{
 \dontrun{
 ## simple echarts scatter plot
-g <- iris \%>\% echartR(x=Sepal.Width, y=Petal.Width, series=Species,
+g = iris \%>\% echartR(x=Sepal.Width, y=Petal.Width, series=Species,
                       type='scatter')
 
 ## set simple titles
@@ -76,7 +76,7 @@ g \%>\% setTitle(
 
 
 ## echarts with timeline
-g1 <- iris \%>\% echartR(x=Sepal.Width, y=Petal.Width, z=Species, type='scatter')
+g1 = iris \%>\% echartR(x=Sepal.Width, y=Petal.Width, t=Species, type='scatter')
 
 ## simple titles/subtitles
 g1 \%>\% setTitle(
@@ -84,7 +84,7 @@ g1 \%>\% setTitle(
     '[R. A. Fisher](https://en.wikipedia.org/wiki/Ronald_Fisher)')
 
 ## user-defined titles/subtitles
-titles <- c(
+titles = c(
     '[Iris setosa](https://en.wikipedia.org/wiki/Iris_setosa)',
     '[Iris versicolor](https://en.wikipedia.org/wiki/Iris_versicolor)',
     '[Iris virginica](https://en.wikipedia.org/wiki/Iris_virginica)')

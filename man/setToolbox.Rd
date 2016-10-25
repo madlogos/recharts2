@@ -62,7 +62,7 @@ When an echart object is generated, you can modify it by setting toolbox using
 }
 \examples{
 \dontrun{
-g <- iris \%>\% echartR(x=Sepal.Width, y=Petal.Width, series=Species, type='scatter')
+g = iris \%>\% echartR(x=Sepal.Width, y=Petal.Width, series=Species, type='scatter')
 g \%>\% setToolbox(TRUE, 'en')
 }
 }

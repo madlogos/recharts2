@@ -20,9 +20,9 @@ overideHeatmap(chart, ...)
 numeric (index of the series) or string (series name). If NULL, then apply to all.
 Default NULL.}
 
-\item{timeslots}{Vector. Specify which timeslots (z) you want to insert heatmap.
+\item{timeslots}{Vector. Specify which timeslots (t) you want to insert heatmap.
 Could be numeric (index of the timeslot) or string (timeslot name).
-If NULL, then apply to all. Default NULL. You could use \code{z} for short.}
+If NULL, then apply to all. Default NULL. You could use \code{t} for short.}
 
 \item{data}{The heatmap source data. Two modes:
 \describe{
