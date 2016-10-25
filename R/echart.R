@@ -145,9 +145,19 @@ echart.data.frame = function(
                     data[,facetvarRaw[i]] = as.factor(data[,facetvarRaw[i]])
             }
         if (!is.null(series))
-            for (i in seq_along(seriesvarRaw)){
-                if (!is.factor(data[,seriesvarRaw[i]]))
-                    data[,seriesvarRaw[i]] = as.factor(data[,seriesvarRaw[i]])
+            for (i in seq_along(seriesvar)){
+                if (!is.factor(data[,seriesvar[i]]))
+                    data[,seriesvar[i]] = as.factor(data[,seriesvar[i]])
+            }
+        if (!is.null(x))
+            for (i in seq_along(xvarRaw)){
+                if (is.factor(data[,xvarRaw[i]]))
+                    data[,xvarRaw[i]] = as.character(data[,xvarRaw[i]])
+            }
+        if (!is.null(y))
+            for (i in seq_along(yvarRaw)){
+                if (is.factor(data[,yvarRaw[i]]))
+                    data[,yvarRaw[i]] = as.character(data[,yvarRaw[i]])
             }
         # ------------------x, y lab(s)----------------------------
         #xlab = ylab = NULL
@@ -162,16 +172,16 @@ echart.data.frame = function(
 
     # ----------------Layout, type, subtype---------------------
     layout = arrangeLayout(
-        if ('series' %in% dataVars) data.frame(data[, seriesvarRaw]) else NULL,
+        if ('series' %in% dataVars) data.frame(data[, seriesvar]) else NULL,
         if ('facet' %in% dataVars) data.frame(data[, facetvarRaw]) else NULL
     )
     layout$type = if (is.null(type)) NA else matchLayout(tolower(type), layout)
     layout$subtype = if (is.null(subtype)) NA else
         matchLayout(tolower(subtype), layout)
+    auto.layout = autoMultiChartLayout(max(layout$ifacet))
     if ('facet' %in% dataVars) if (length(facetvarRaw)>1)
         auto.layout = autoMultiChartLayout(
             max(layout$ifacet), max(layout$irow), max(layout$icol))
-    else auto.layout = autoMultiChartLayout(max(layout$ifacet))
     facets = data.frame(ifacet=unique(layout$ifacet))
     facets[,c('centerX', 'centerY')] = auto.layout$centers
     facets[,c('radius', 'width', 'height')] = list(
@@ -190,22 +200,23 @@ echart.data.frame = function(
             )
         assignment = paste0(dataVars, " = evalVarArg(", vars, ", ",
                              substitute(df, parent.frame()), ")")
-        assignment = gsub("\\\"",  "", assignment)
+        #assignment = gsub("\\\"",  "", assignment)
         eval(parse(text=paste0("list(", paste(assignment, collapse=", "), ")")))
     })
 
     .splitFacetSeries = cmpfun(function(df){
-        # inherit dataVars, facetvarRaw, seriesvarRaw
+        # inherit dataVars, facetvarRaw, seriesvar
         # note: the splitted list should be consistent with df layout
+
         facetvarRaw = get0("facetvarRaw")
-        seriesvarRaw = get0("seriesvarRaw")
+        seriesvar = get0("seriesvar")
         if ('facet' %in% dataVars){
             if ('series' %in% dataVars){
                 out = split(df, if (length(facetvarRaw) > 1) {
-                    list(df[,seriesvarRaw[1]], df[,facetvarRaw[2]],
+                    list(df[,seriesvar[1]], df[,facetvarRaw[2]],
                          df[,facetvarRaw[1]])
                 }else{
-                    list(df[,seriesvarRaw[1]], df[,facetvarRaw[1]])
+                    list(df[,seriesvar[1]], df[,facetvarRaw[1]])
                 })
             }else{
                 out = split(df, if (length(facetvarRaw) > 1) {
@@ -216,7 +227,7 @@ echart.data.frame = function(
             }
         }else{
             if ('series' %in% dataVars){
-                out = split(df,  list(df[,seriesvarRaw[1]]))
+                out = split(df,  list(df[,seriesvar[1]]))
             }else{
                 out = list(df)
             }

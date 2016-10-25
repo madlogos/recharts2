@@ -259,10 +259,18 @@ autoAxis = function(chart, hasSubAxis = TRUE, showMainAxis = TRUE, ...) {
     if (nrow(layout) == 0) return(chart)
     hasT = 'timeline' %in% names(chart$x)
     lstXAxis = lapply(unique(layout$xAxisIdx), function(x){
-        list(gridIndex = x, show = showMainAxis, type = if (hasT)
-            axisType(getMeta(chart)[[1]][[x+1]]$x[,1], 'x') else
-                axisType(getMeta(chart)[[x+1]]$x[,1], 'x'),
-            axisLine = list(onZero=FALSE), scale = TRUE
+        type = if (hasT) axisType(getMeta(chart)[[1]][[x+1]]$x[,1], 'x') else
+                axisType(getMeta(chart)[[x+1]]$x[,1], 'x')
+        if (type == 'category'){
+            idx = getLayout(chart)$i[getLayout(chart)$xAxisIdx == x]
+            data = getMeta(chart)[idx]
+            data = sapply(data, function(lst) lst$x[,1])
+            axisData = unique(as.vector(data))
+        }else{
+            axisData = list()
+        }
+        list(gridIndex = x, show = showMainAxis, type = type,
+            axisLine = list(onZero=FALSE), scale = TRUE, data = axisData
         )
     })
     if (hasSubAxis)
@@ -270,14 +278,22 @@ autoAxis = function(chart, hasSubAxis = TRUE, showMainAxis = TRUE, ...) {
             list(gridIndex = x, show = FALSE, type = if (hasT)
                 axisType(getMeta(chart)[[1]][[x+1]]$x[,1], 'x') else
                     axisType(getMeta(chart)[[x+1]]$x[,1], 'x'),
-                axisLine = list(onZero=FALSE), scale = TRUE
+                axisLine = list(onZero=FALSE), scale = TRUE, data = list()
             )
         }))
     lstYAxis = lapply(unique(layout$yAxisIdx), function(x){
-        list(gridIndex = x, show = showMainAxis, type = if (hasT)
-            axisType(getMeta(chart)[[1]][[x+1]]$y[,1], 'y') else
-                axisType(getMeta(chart)[[x+1]]$y[,1], 'y'),
-            axisLine = list(onZero=FALSE), scale = TRUE
+        type = if (hasT) axisType(getMeta(chart)[[1]][[x+1]]$y[,1], 'y') else
+                axisType(getMeta(chart)[[x+1]]$y[,1], 'y')
+        if (type == 'category'){
+            idx = getLayout(chart)$i[getLayout(chart)$yAxisIdx == x]
+            data = getMeta(chart)[idx]
+            data = sapply(data, function(lst) lst$y[,1])
+            axisData = unique(as.vector(data))
+        }else{
+            axisData = list()
+        }
+        list(gridIndex = x, show = showMainAxis, type = type,
+            axisLine = list(onZero=FALSE), scale = TRUE, data = axisData
         )
     })
     if (hasSubAxis)
@@ -285,7 +301,7 @@ autoAxis = function(chart, hasSubAxis = TRUE, showMainAxis = TRUE, ...) {
             list(gridIndex = x, show = FALSE, type = if (hasT)
                 axisType(getMeta(chart)[[1]][[x+1]]$y[,1], 'y') else
                     axisType(getMeta(chart)[[x+1]]$y[,1], 'y'),
-                axisLine = list(onZero=FALSE), scale = TRUE
+                axisLine = list(onZero=FALSE), scale = TRUE, data = list()
             )
         }))
     lstGrid = lapply(unique(layout$coordIdx), function(x){

@@ -11,9 +11,10 @@ evalFormula = function(x, data) {
 }
 
 evalVar = function(var, data){
-    stopifnot(inherits(var, 'formula'))
-    if (var != ~NULL){
-        evalFormula(var, data=data)
+    if (! inherits(var, 'formula')){
+        if (is.character(var)) data[,var]
+    }else{
+        if (var != ~NULL) evalFormula(var, data=data)
     }
 }
 
@@ -29,7 +30,7 @@ evalVarArg = function(x, data, simplify=FALSE, eval=TRUE){
     ## evalVarArg(c(Species, Sepal.Width), iris)
     ## evalVarArg(c(as.numeric(Species), Sepal.Width), iris)
     ## evalVarArg(c(as.numeric(Species)+1, Sepal.Width), iris)
-
+    ## evalVarArg(factor(am, labels=c('M', 'A')), mtcars)
     # character, don't coerce; otherwise, coerce to formula
 
     # coerce x to formula if is symbol
@@ -415,6 +416,7 @@ setCoordIndex = function(lst, coordName, coordIdx){
     }else if (coordName == 'singleAxis'){
         lst$singleAxisIndex = coordIdx
     }
+    lst$coordinateSystem = as.character(coordName)
     return(lst)
 }
 
