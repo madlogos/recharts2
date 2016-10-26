@@ -265,7 +265,7 @@ autoAxis = function(chart, hasSubAxis = TRUE, showMainAxis = TRUE, ...) {
             idx = getLayout(chart)$i[getLayout(chart)$xAxisIdx == x]
             data = getMeta(chart)[idx]
             data = sapply(data, function(lst) lst$x[,1])
-            axisData = unique(as.vector(data))
+            axisData = if (is.list(data)) unique(unlist(data)) else unique(as.vector(data))
         }else{
             axisData = list()
         }

@@ -93,80 +93,117 @@ series_bar = function(lst, type, subtype, layout, fullMeta, return=NULL, ...){
         }
     }
 
-    obj = list()
-    if (is.null(lst$series)) {  # no series
-        if (is.numeric(lst$x[,1])){
-            obj = list(list(type=type$type[1], data=asEchartData(data[,2:1])))
-            if (any(grepl("flip", type$misc[[1]]))) obj[[1]]$barHeight=10
-            if (grepl('hist',type$misc[[1]])) {
-                obj[[1]]$barGap = '1%'
-                obj[[1]]$barWidth = '99%'
-                obj[[1]]$barMaxWidth = '100%'
-            }
+    # weight link to barWidth/lineWidth
+    barWidths = NULL
+    lineWidths = NULL
+    if ('weight' %in% names(lst)) if(is.numeric(lst$weight[,1])){
+        if (nrow(lst$weight) > 0){
+            dfWgt = data.frame(s=if (is.null(lst$series)) '' else fullMeta$series[,1],
+                               w=fullMeta$weight[,1], stringsAsFactors = FALSE)
+            lvlWgt = data.table::dcast(dfWgt, s~., mean, value.var='w')
+            lvlWgt[,2][is.na(lvlWgt[,2])] = 0
+            pctWgt = lvlWgt[,2]/sum(lvlWgt[,2])
+            barWidths = paste0(100/nrow(data) * 0.8 * pctWgt, '%')
+            lineWidths = 8*(pctWgt-min(pctWgt))/(max(pctWgt)-min(pctWgt)) +1
+            lineWidths[is.na(lineWidths)] = 1
         }else{
-            obj = list(list(type=type$type[1], data=asEchartData(data[,1])))
+            lineWidths = 1
         }
-    }else{  # series-specific
-        dataCross = tapply(data[,1], list(data[,2], lst$series[,1]), function(x) {
-            if (length(x) == 1) return(x)
-            stop('y must only have one value corresponding to each combination of x and series')
-        })
-        idx = match(unique(data[,2]),rownames(dataCross))
-        dataCross = dataCross[idx,]
-        #rownames(dataCross) = data[,2]
-        data = dataCross
-
-        # weight link to barWidth/lineWidth
-        barWidths = NULL
-        lineWidths = NULL
-        if ('weight' %in% names(lst)) if(is.numeric(lst$weight[,1])){
-            if (nrow(lst$weight) > 0){
-                dfWgt = data.frame(s=if (is.null(lst$series)) '' else lst$series[,1],
-                                    w=lst$weight[,1], stringsAsFactors = FALSE)
-                lvlWgt = data.table::dcast(dfWgt, s~., mean, value.var='w')
-                lvlWgt[,2][is.na(lvlWgt[,2])] = 0
-                pctWgt = lvlWgt[,2]/sum(lvlWgt[,2])
-                barWidths = paste0(
-                    "(document.getElementById('temp').offsetWidth-200)/",
-                    nrow(data), "*0.8*", pctWgt)
-                lineWidths = 8*(pctWgt-min(pctWgt))/(max(pctWgt)-min(pctWgt)) +1
-                lineWidths[is.na(lineWidths)] = 1
-            }else{
-                lineWidths = 1
-            }
-        }
-
-        obj = lapply(seq_len(ncol(data)), function(i){
-            if (is.numeric(lst$x[,1])){
-                o = list(name = colnames(data)[i], type = type$type[i],
-                         data = asEchartData(cbind(as.numeric(rownames(data)),
-                                                        data[,i])))
-                if (any(grepl("flip", type$misc)))
-                    o = mergeList(o, list(barHeight=10))
-            }else{
-                o = list(name = colnames(data)[i], type = type$type[i],
-                         data = asEchartData(data[,i]))
-            }
-            if (!is.null(barWidths)){
-                if (any(grepl("flip", type$misc[[i]])))
-                    o$barWidth = JS(gsub("offsetWidth", "offsetHeight", barWidths[i]))
-                else
-                    o$barWidth = JS(barWidths[i])
-            }
-
-            if (type$type[i] == 'line' && !is.null(lineWidths)){
-                if (is.null(o$itemStyle)) o$itemStyle = list()
-                if (is.null(o$itemStyle$normal)) o$itemStyle$normal = list()
-                if (is.null(o$itemStyle$normal$lineStyle))
-                    o$itemStyle$normal$lineStyle = list()
-                o$itemStyle$normal$lineStyle = mergeList(
-                    o$itemStyle$normal$lineStyle, list(width=lineWidths[i])
-                )
-            }
-            if ('stack' %in% ifnull(subtype[i], '')[[1]]) o[['stack']] = 'Group'
-            return(o)
-        })
     }
+
+    obj = list(type=type$type[1], data=asEchartData(data[,2:1]))
+    if (!is.null(lst$series)) if (!is.na(lst$series[1,1]))
+        obj$name = as.character(lst$series[1,1])
+    if (any(grepl("flip", type$misc[[1]])))
+        obj$barHeight =
+            if (grepl('hist',type$misc[[1]])) {
+                obj$barGap = '1%'
+                obj$barWidth = '99%'
+                obj$barMaxWidth = '100%'
+            }
+    if (type$type[1] == 'line' && !is.null(lineWidths)){
+        if (is.null(obj$itemStyle)) obj$itemStyle = list()
+        obj$itemStyle = mergeList(obj$itemStyle, list(
+            normal=list(lineStyle=list(width=lineWidths[1]))))
+    }
+    if ('stack' %in% ifnull(subtype[1], '')[[1]]) obj$stack = 'Group'
+    obj = setCoordIndex(obj, layout$coordSys, layout$coordIdx)
+
+    # obj = list()
+    # if (is.null(lst$series)) {  # no series
+    #     if (is.numeric(lst$x[,1])){
+    #         obj = list(list(type=type$type[1], data=asEchartData(data[,2:1])))
+    #         if (any(grepl("flip", type$misc[[1]])))
+    #             obj[[1]]$barHeight =
+    #         if (grepl('hist',type$misc[[1]])) {
+    #             obj[[1]]$barGap = '1%'
+    #             obj[[1]]$barWidth = '99%'
+    #             obj[[1]]$barMaxWidth = '100%'
+    #         }
+    #     }else{
+    #         obj = list(list(type=type$type[1], data=asEchartData(data[,1])))
+    #     }
+    # }else{  # series-specific
+    #     dataCross = tapply(data[,1], list(data[,2], lst$series[,1]), function(x) {
+    #         if (length(x) == 1) return(x)
+    #         stop('y must only have one value corresponding to each combination of x and series')
+    #     })
+    #     idx = match(unique(data[,2]),rownames(dataCross))
+    #     dataCross = dataCross[idx,]
+    #     #rownames(dataCross) = data[,2]
+    #     data = dataCross
+    #
+    #     # weight link to barWidth/lineWidth
+    #     barWidths = NULL
+    #     lineWidths = NULL
+    #     if ('weight' %in% names(lst)) if(is.numeric(lst$weight[,1])){
+    #         if (nrow(lst$weight) > 0){
+    #             dfWgt = data.frame(s=if (is.null(lst$series)) '' else lst$series[,1],
+    #                                 w=lst$weight[,1], stringsAsFactors = FALSE)
+    #             lvlWgt = data.table::dcast(dfWgt, s~., mean, value.var='w')
+    #             lvlWgt[,2][is.na(lvlWgt[,2])] = 0
+    #             pctWgt = lvlWgt[,2]/sum(lvlWgt[,2])
+    #             barWidths = paste0(
+    #                 "(document.getElementById('temp').offsetWidth-200)/",
+    #                 nrow(data), "*0.8*", pctWgt)
+    #             lineWidths = 8*(pctWgt-min(pctWgt))/(max(pctWgt)-min(pctWgt)) +1
+    #             lineWidths[is.na(lineWidths)] = 1
+    #         }else{
+    #             lineWidths = 1
+    #         }
+    #     }
+    #
+    #     obj = lapply(seq_len(ncol(data)), function(i){
+    #         if (is.numeric(lst$x[,1])){
+    #             o = list(name = colnames(data)[i], type = type$type[i],
+    #                      data = asEchartData(cbind(as.numeric(rownames(data)),
+    #                                                     data[,i])))
+    #             if (any(grepl("flip", type$misc)))
+    #                 o = mergeList(o, list(barHeight=10))
+    #         }else{
+    #             o = list(name = colnames(data)[i], type = type$type[i],
+    #                      data = asEchartData(data[,i]))
+    #         }
+    #         if (!is.null(barWidths)){
+    #             if (any(grepl("flip", type$misc[[i]])))
+    #                 o$barWidth = JS(gsub("offsetWidth", "offsetHeight", barWidths[i]))
+    #             else
+    #                 o$barWidth = JS(barWidths[i])
+    #         }
+    #
+    #         if (type$type[i] == 'line' && !is.null(lineWidths)){
+    #             if (is.null(o$itemStyle)) o$itemStyle = list()
+    #             if (is.null(o$itemStyle$normal)) o$itemStyle$normal = list()
+    #             if (is.null(o$itemStyle$normal$lineStyle))
+    #                 o$itemStyle$normal$lineStyle = list()
+    #             o$itemStyle$normal$lineStyle = mergeList(
+    #                 o$itemStyle$normal$lineStyle, list(width=lineWidths[i])
+    #             )
+    #         }
+    #         if ('stack' %in% ifnull(subtype[i], '')[[1]]) o[['stack']] = 'Group'
+    #         return(o)
+    #     })
+    # }
 
     return(obj[intersect(names(obj), ifnull(return, names(obj)))])
 }
