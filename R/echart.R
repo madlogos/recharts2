@@ -175,7 +175,7 @@ echart.data.frame = function(
         if ('series' %in% dataVars) data.frame(data[, seriesvar]) else NULL,
         if ('facet' %in% dataVars) data.frame(data[, facetvarRaw]) else NULL
     )
-    layout$type = if (is.null(type)) NA else matchLayout(tolower(type), layout)
+    layout$type = if (is.null(type)) NA else tolower(matchLayout(type, layout))
     layout$subtype = if (is.null(subtype)) NA else
         matchLayout(tolower(subtype), layout)
     auto.layout = autoMultiChartLayout(max(layout$ifacet))
@@ -188,6 +188,7 @@ echart.data.frame = function(
         auto.layout$radius,  auto.layout$width, auto.layout$height)
     facets[,c('left', 'top', 'right', 'bottom')] = auto.layout$grids
     layout = merge(layout, facets, by='ifacet', sort=FALSE)
+
     # -----------------split df to lists---------------------
     .makeMetaDataList = cmpfun(function(df) {
         # generate metaData, df wrapped in lists
@@ -198,8 +199,9 @@ echart.data.frame = function(
             vars = paste0(
                 'c(', apply(vars, 2, function(x) paste(x, collapse=',')), ')'
             )
-        assignment = paste0(dataVars, " = evalVarArg(", vars, ", ",
-                             substitute(df, parent.frame()), ")")
+        assignment = 'rownames = data.frame(rownames = 1:nrow(df))'
+        assignment = c(assignment, paste0(dataVars, " = evalVarArg(", vars, ", ",
+                             substitute(df, parent.frame()), ")"))
         #assignment = gsub("\\\"",  "", assignment)
         eval(parse(text=paste0("list(", paste(assignment, collapse=", "), ")")))
     })
@@ -372,10 +374,10 @@ echart.data.frame = function(
                                               'recharts2')
                 series_fun(seriesData[[i]], type = dfType[i,],
                            subtype = lstSubtype[[i]], layout = layout[i,],
-                           fullMeta = metaData)
+                           meta = metaData, fullMeta = fullMeta)
             })
             out = structure(list(series=lstSeries),
-                             meta = seriesData, layout = layout)
+                            meta = seriesData, layout = layout)
             # out = structure(seriesData, layout=layout)
         }else{  # with timeline
             time_metaData = lapply(seriesData, function(lst){
@@ -392,7 +394,7 @@ echart.data.frame = function(
                                               'recharts2')
                 series_fun(time_metaData[[t]], type = dfType[i,],
                            subtype = lstSubtype[[i]], layout = layout[i,],
-                           fullMeta = metaData)
+                           meta = metaData, fullMeta = fullMeta)
             })
             out = structure(list(series = lstSeries), meta = metaData[[t]])
         }
@@ -448,7 +450,7 @@ browser()
         'line', 'bar', 'scatter', 'candlestick'))){
         chart = chart %>% autoAxis() %>%
             setTooltip() %>% setToolbox() %>% setLegend() %>%
-            flipAxis(flip=any(grepl("flip", dfType$misc)))
+            flipAxis(flip=which(grepl("flip", dfType$misc)))
     }else{
         chart = chart %>% autoAxis(showMainAxis=FALSE) %>%
             setGrid(borderWidth=0) %>%

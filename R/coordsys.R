@@ -256,6 +256,9 @@ autoAxis = function(chart, hasSubAxis = TRUE, showMainAxis = TRUE, ...) {
     stopifnot(inherits(chart, 'echarts'))
     layout = getLayout(chart)
     layout = layout[layout$coordSys == 'cartesian2d',]
+    meta = getMeta(chart)
+    xlab = names(meta[[1]]$x)[1]
+    ylab = names(meta[[1]]$y)[1]
     if (nrow(layout) == 0) return(chart)
     hasT = 'timeline' %in% names(chart$x)
     lstXAxis = lapply(unique(layout$xAxisIdx), function(x){
@@ -264,12 +267,15 @@ autoAxis = function(chart, hasSubAxis = TRUE, showMainAxis = TRUE, ...) {
         if (type == 'category'){
             idx = getLayout(chart)$i[getLayout(chart)$xAxisIdx == x]
             data = getMeta(chart)[idx]
-            data = sapply(data, function(lst) lst$x[,1])
-            axisData = if (is.list(data)) unique(unlist(data)) else unique(as.vector(data))
+            data = lapply(data, function(lst) data.frame(rownames=lst$rownames[,1],
+                                                         x=lst$x[,1]))
+            data = do.call('rbind', data)
+            data = data[order(data$rownames),]
+            axisData = unique(as.character(data$x))
         }else{
             axisData = list()
         }
-        list(gridIndex = x, show = showMainAxis, type = type,
+        list(gridIndex = x, show = showMainAxis, type = type, name = xlab,
             axisLine = list(onZero=FALSE), scale = TRUE, data = axisData
         )
     })
@@ -287,12 +293,15 @@ autoAxis = function(chart, hasSubAxis = TRUE, showMainAxis = TRUE, ...) {
         if (type == 'category'){
             idx = getLayout(chart)$i[getLayout(chart)$yAxisIdx == x]
             data = getMeta(chart)[idx]
-            data = sapply(data, function(lst) lst$y[,1])
-            axisData = unique(as.vector(data))
+            data = lapply(data, function(lst) data.frame(rownames=lst$rownames[,1],
+                                                         y=lst$y[,1]))
+            data = do.call('rbind', data)
+            data = data[order(data$rownames),]
+            axisData = unique(as.character(data$y))
         }else{
             axisData = list()
         }
-        list(gridIndex = x, show = showMainAxis, type = type,
+        list(gridIndex = x, show = showMainAxis, type = type, name = ylab,
             axisLine = list(onZero=FALSE), scale = TRUE, data = axisData
         )
     })
@@ -359,27 +368,78 @@ axisType = function(data, which = c('x', 'y')) {
     stop('Unable to derive the axis type automatically from the ', which, ' variable')
 }
 
-flipAxis = function(chart, flip=TRUE, ...){
-    # flip x|y-axis
-    if (!flip) return(chart)
+flipAxis = function(chart, flip=NULL, ...){
+    # flip x|y-axis, and exchange x,y in data series
+    # flip: index of series
     if (!inherits(chart, 'echarts'))
         stop('chart is not an Echarts object. ',
              'Check if you have missed a %>% in your pipe chain.')
+    layout = getLayout(chart)
+    flip = intersect(flip, which(layout$coordSys == 'cartesian2d'))
+    if (length(flip) == 0) return(chart)
+    gridIdx = unique(layout$coordIdx[flip])
     hasT = 'timeline' %in% names(chart$x)
+
     if (hasT){
-        if ('xAxis' %in% names(chart$x$baseOption) &&
-            'yAxis' %in% names(chart$x$baseOption)) {
-            axes = exchange(chart$x$baseOption$xAxis,
-                            chart$x$baseOption$yAxis)
-            chart$x$baseOption$xAxis = axes[[1]]
-            chart$x$baseOption$yAxis = axes[[2]]
+        if (all(c('xAxis', 'yAxis') %in% names(chart$x$baseOption))) {
+            lstAx = chart$x$baseOption[c('xAxis', 'yAxis')]
+            axes = sapply(lstAx, function(lst) sapply(lst, function(l) {
+                l$gridIndex}))
+            axes = data.table::melt(axes)
+            axes = axes[axes$value %in% gridIdx,]
+            if (nrow(axes) > 0){
+                xAxIdx = axes$Var1[axes$Var2=='xAxis']
+                yAxIdx = axes$Var1[axes$Var2=='yAxis']
+                tmp = list(chart$x$baseOption$xAxis[xAxIdx],
+                           chart$x$baseOption$yAxis[yAxIdx])
+                for (i in xAxIdx) chart$x$xAxis[[i]] = tmp[[2]][[which(xAxIdx==i)]]
+                for (i in yAxIdx) chart$x$yAxis[[i]] = tmp[[1]][[which(yAxIdx==i)]]
+            }
+
+            for (t in seq_along(chart$x$options)){
+                for (s in flip){
+                    if (is.list(chart$x$options[[t]]$series[[s]]$data)){
+                        chart$x$options[[t]]$series[[s]]$data = lapply(
+                            chart$x$options[[t]]$series[[s]]$data, function(l){
+                                l[1:2] = l[2:1]
+                            }
+                        )
+                    }else if (is.data.frame(chart$x$options[[t]]$series[[s]]$data) &&
+                              ncol(chart$x$options[[t]]$series[[s]]$data) > 1){
+                        chart$x$options[[t]]$series[[s]]$data[,1:2] =
+                            chart$x$options[[t]]$series[[s]]$data[,2:1]
+                    }
+                }
+            }
         }
     }else{
-        if ('xAxis' %in% names(chart$x) &&
-            'yAxis' %in% names(chart$x)){
-            axes = exchange(chart$x$xAxis, chart$x$yAxis)
-            chart$x$xAxis = axes[[1]]
-            chart$x$yAxis = axes[[2]]
+        if (all(c('xAxis', 'yAxis') %in% names(chart$x))){
+            lstAx = chart$x[c('xAxis', 'yAxis')]
+            axes = sapply(lstAx, function(lst) sapply(lst, function(l) {
+                l$gridIndex}))
+            axes = data.table::melt(axes)
+            axes = axes[axes$value %in% gridIdx,]
+            if (nrow(axes) > 0){
+                xAxIdx = axes$Var1[axes$Var2=='xAxis']
+                yAxIdx = axes$Var1[axes$Var2=='yAxis']
+                tmp = list(chart$x$xAxis[xAxIdx], chart$x$yAxis[yAxIdx])
+                for (i in xAxIdx) chart$x$xAxis[[i]] = tmp[[2]][[which(xAxIdx==i)]]
+                for (i in yAxIdx) chart$x$yAxis[[i]] = tmp[[1]][[which(yAxIdx==i)]]
+            }
+
+            for (s in flip){
+                if (is.list(chart$x$series[[s]]$data)){
+                    chart$x$series[[s]]$data = lapply(
+                        chart$x$series[[s]]$data, function(l){
+                            l[1:2] = l[2:1]
+                        }
+                    )
+                }else if (is.data.frame(chart$x$series[[s]]$data) &&
+                          ncol(chart$x$series[[s]]$data) > 1){
+                    chart$x$series[[s]]$data[,1:2] =
+                        chart$x$series[[s]]$data[,2:1]
+                }
+            }
         }
     }
     return(chart)

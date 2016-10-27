@@ -1,5 +1,5 @@
 #' @importFrom data.table melt
-series_scatter = function(lst, type, subtype, layout, fullMeta, return=NULL, ...){
+series_scatter = function(lst, type, subtype, layout, meta, fullMeta, return=NULL, ...){
     # g = echart(mtcars, wt, mpg, am)
 
     if (is.null(lst$x) || is.null(lst$y))
@@ -7,12 +7,12 @@ series_scatter = function(lst, type, subtype, layout, fullMeta, return=NULL, ...
     if (is.character(lst$x) && is.character(lst$y) && is.null(lst$weight))
         stop('if x and y are characters, then numeric weight is needed.')
     lst = mergeList(list(weight=NULL, series=NULL), lst)
-    data = cbind(lst$y[,1], lst$x[,1])
+    data = data.frame(y=lst$y[,1], x=lst$x[,1])
 
     if (!is.null(lst$weight)){  # weight as symbolSize
-        data = cbind(data, lst$weight[,1])
-        minWeight = min(abs(fullMeta$weight[,1]), na.rm=TRUE)
-        maxWeight = max(abs(fullMeta$weight[,1]), na.rm=TRUE)
+        data$weight = lst$weight[,1]
+        minWeight = min(abs(meta$weight[,1]), na.rm=TRUE)
+        maxWeight = max(abs(meta$weight[,1]), na.rm=TRUE)
         range = maxWeight - minWeight
         folds = maxWeight / minWeight
         if (abs(folds) < 50){  # max/min < 50, linear
@@ -46,7 +46,7 @@ series_scatter = function(lst, type, subtype, layout, fullMeta, return=NULL, ...
         ## only fetch col 1-2 of data, col 3 is series
     }else{
         obj = list(type = type$type,
-                    data = asEchartData(data[,c(2:1, 3)]))
+                   data = asEchartData(data[,c(2:1, 3)]))
             if (grepl('bubble', type$misc)) obj$symbolSize = jsSymbolSize
             # line, weight links to line width
             if (type$type == 'line' && !is.null(lineWidths)){
@@ -67,39 +67,47 @@ series_scatter = function(lst, type, subtype, layout, fullMeta, return=NULL, ...
     return(obj[intersect(names(obj), ifnull(return, names(obj)))])
 }
 
-series_bar = function(lst, type, subtype, layout, fullMeta, return=NULL, ...){
+series_bar = function(lst, type, subtype, layout, meta, fullMeta, return=NULL, ...){
     # example:
     # mtcars$model = row.names(mtcars)
     # echart(mtcars, model, mpg,
     #     series=factor(am, levels=c(1,0), labels=c('Manual','Automatic')),
     #     type=c('hbar','scatter'))
     lst = mergeList(list(series=NULL), lst)
-    data = cbind(lst$y[,1], lst$x[,1])
-
+    if (is.null(lst$x)) stop('bar chart needs at least x.')
+    data = data.frame(y=ifnull(lst$y[,1], NA), x=lst$x[,1])
+browser()
     if (!'y' %in% names(lst)) {  # y is null, then...
         if (any(grepl('hist', type$misc))){  # histogram
-            hist = hist(data[,1], plot=FALSE)
+            hist = hist(data[,2], plot=FALSE)
             if ('density' %in% subtype[[1]]){
                 data = as.matrix(cbind(hist$density, hist$mids))  # y, x
             }else{
                 data = as.matrix(cbind(hist$counts, hist$mids))  # y, x
             }
         }else{ # simply run freq of x
-            if (is.numeric(data[,1])){
-                data = as.matrix(as.data.frame(table(data[,1])))
+            if (is.numeric(data[,2])){
+                data = as.matrix(as.data.frame(table(data[,2])))
             }else{
-                data = as.matrix(table(data[,1]))
+                data = as.matrix(table(data[,2]))
             }
         }
+    }else{
+        if (any(duplicated(data$x)))
+            stop('y must only have one value corresponding to each combination of x, series and facet')
     }
+
+    data1 = data.frame(y=NA, x=meta$x[,1])
+    data1$y[data1$x %in% data$x] = data$y
+    data = data1
 
     # weight link to barWidth/lineWidth
     barWidths = NULL
     lineWidths = NULL
     if ('weight' %in% names(lst)) if(is.numeric(lst$weight[,1])){
         if (nrow(lst$weight) > 0){
-            dfWgt = data.frame(s=if (is.null(lst$series)) '' else fullMeta$series[,1],
-                               w=fullMeta$weight[,1], stringsAsFactors = FALSE)
+            dfWgt = data.frame(s=if (is.null(lst$series)) '' else meta$series[,1],
+                               w=meta$weight[,1], stringsAsFactors = FALSE)
             lvlWgt = data.table::dcast(dfWgt, s~., mean, value.var='w')
             lvlWgt[,2][is.na(lvlWgt[,2])] = 0
             pctWgt = lvlWgt[,2]/sum(lvlWgt[,2])
@@ -114,13 +122,9 @@ series_bar = function(lst, type, subtype, layout, fullMeta, return=NULL, ...){
     obj = list(type=type$type[1], data=asEchartData(data[,2:1]))
     if (!is.null(lst$series)) if (!is.na(lst$series[1,1]))
         obj$name = as.character(lst$series[1,1])
-    if (any(grepl("flip", type$misc[[1]])))
-        obj$barHeight =
-            if (grepl('hist',type$misc[[1]])) {
-                obj$barGap = '1%'
-                obj$barWidth = '99%'
-                obj$barMaxWidth = '100%'
-            }
+    if (any(grepl("flip", type$misc[[1]]))) obj$barMinHeight = 0
+    if (grepl('hist',type$misc[[1]])) obj$barWidth = '90%'
+
     if (type$type[1] == 'line' && !is.null(lineWidths)){
         if (is.null(obj$itemStyle)) obj$itemStyle = list()
         obj$itemStyle = mergeList(obj$itemStyle, list(

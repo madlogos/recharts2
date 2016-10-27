@@ -780,16 +780,19 @@ asEchartData = function(x, na.string='-'){
     # convert matrix/data.frame or vector to JSON-list lists
     # and convert NA to '-'
     if (!is.null(dim(x))){
-        o = apply(x, 1, function(row){
-            row = as.list(unname(row))
-            row = lapply(row, function(e) e = if (is.na(e)) na.string else e)
+        x[, apply(x, 2, is.factor)] = as.character(x[, apply(x, 2, is.factor)])
+        o = lapply(1:nrow(x), function(i){
+            row = as.list(unname(I(x[i,])))
+            row = lapply(row, function(e) {
+                e = ifna(e, na.string)
+            })
             return(row)
         })
         # if (nrow(x) == 1 && ncol(x) > 1)
         #     o = list(unname(o))
     }else{
         o = as.list(unname(x))
-        o = lapply(x, function(e) e = if (is.na(e)) na.string else e)
+        o = lapply(o, function(e) e = if (is.na(e)) na.string else e)
     }
 
     return(unname(o))
@@ -969,7 +972,7 @@ autoMultiPolarChartLayout = function(n, col.max=5, gap=5, top=5, bottom=5,
 }
 
 autoMultiChartLayout = function(
-    n, row=NULL, col=NULL, col.max=5, vgap=5, hgap=5, top=8, bottom=8,
+    n, row=NULL, col=NULL, col.max=5, vgap=5, hgap=4, top=8, bottom=8,
     left=6, right=6, width=100, height=100, mode=c('percent', 'value'),
     out=c('asis', 'pixel')
 ){
