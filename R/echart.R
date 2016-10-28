@@ -199,7 +199,8 @@ echart.data.frame = function(
             vars = paste0(
                 'c(', apply(vars, 2, function(x) paste(x, collapse=',')), ')'
             )
-        assignment = 'rownames = data.frame(rownames = 1:nrow(df))'
+        assignment = paste('rownames = data.frame(rownames = if (nrow(df) > 0)',
+                           '1:nrow(df) else numeric(0))')
         assignment = c(assignment, paste0(dataVars, " = evalVarArg(", vars, ", ",
                              substitute(df, parent.frame()), ")"))
         #assignment = gsub("\\\"",  "", assignment)
@@ -239,7 +240,12 @@ echart.data.frame = function(
 
     fullMeta = .makeMetaDataList(data)
     if (hasT){
-        uniT = unique(t[,1])
+        if (is.numeric(t[,1]) || inherits(t[,1], c('Date', 'POSIXlt', 'POSIXct'))){
+            data = data[order(data[,tvar[1]]),]
+            uniT = sort(unique(t[,1]))
+        }else{
+            uniT = unique(t[,1])
+        }
         if (is.factor(uniT)) uniT = as.character(uniT)
         tSize = unique(table(data[,tvar]))
 
@@ -252,20 +258,23 @@ echart.data.frame = function(
             data = data[order(data[,tvar[1]]),]
         }
 
-        dataByT = split(data, as.factor(data[,tvar[1]]))
+        dataByT = split(data, factor(data[,tvar[1]], levels=uniT))
         metaData = lapply(dataByT, .makeMetaDataList)
         names(metaData) = uniT
 
         seriesData = lapply(dataByT, .splitFacetSeries)
-        if (! identical(unique(t[,1]), sort(unique(t[,1]))) &&
-            ! identical(unique(t[,1]), sort(unique(t[,1]), TRUE)))
-            warning("t is not in order, the chart may not show properly!")
+        seriesData = lapply(seriesData, function(lst){
+            lapply(lst, .makeMetaDataList)
+        })
+        # if (! identical(unique(t[,1]), sort(unique(t[,1]))) &&
+        #     ! identical(unique(t[,1]), sort(unique(t[,1]), TRUE)))
+        #     warning("t is not in order, the chart may not show properly!")
     }else{
         metaData = fullMeta
         seriesData = .splitFacetSeries(data)
+        seriesData = lapply(seriesData, .makeMetaDataList)
     }
-    seriesData = lapply(seriesData, .makeMetaDataList)
-
+browser()
     # -----------------check / determine chart types--------------------------
     check.types = unname(sapply(c('auto', validChartTypes$name),
                                  grepl, x=layout$type))
@@ -283,35 +292,36 @@ echart.data.frame = function(
     # determine chart types if 'auto'
     layout$type = sapply(1:nrow(layout), function(i){
         if (layout$type[[i]] == 'auto') {
-            if (nrow(seriesData[[i]]$x) == 0) 'scatter' else
+            seriesSlice = if (hasT) seriesData[[1]] else seriesData
+            if (nrow(seriesSlice[[i]]$x) == 0) 'scatter' else
             determineType(
-                seriesData[[i]]$x[,1], seriesData[[i]]$y[,1])
+                seriesSlice[[i]]$x[,1], seriesSlice[[i]]$y[,1])
         }else{
             layout$type[i]
         }
     })
 
     ## special: geoJSON map, -- not working
-    geoJSON = NULL
-    if (any(type == 'map'))
-        if (all(! grep('.+[Jj][Ss][Oo][Nn]$', subtype))) {
-            stop('When type is "map", geoJSON file must be provided in subtype')
-        }else{
-            if (grep('.+[Jj][Ss][Oo][Nn]$', subtype) > 1)
-                warning('echart only accepts the first geoJSON file.')
-            geoJSON = subtype[grep('.+[Jj][Ss][Oo][Nn]$', subtype)][1]
-            con = system.file('htmlwidgets/lib/echarts/ext/loadGeoJSON.js',
-                               package='recharts2')
-            paramPath = system.file('htmlwidgets/lib/echarts/ext',
-                                     package='recharts2')
-            if (file.exists(con)){
-                writeLines(paste0(
-                    "require('", paramPath, "/param').params.newmap = { ",
-                    "getGeoJson: function (callback) { ",
-                    "$.getJSON('", geoJSON, "',callback);","}})"),
-                    con)
-            }
-        }
+    # geoJSON = NULL
+    # if (any(type == 'map'))
+    #     if (all(! grep('.+[Jj][Ss][Oo][Nn]$', subtype))) {
+    #         stop('When type is "map", geoJSON file must be provided in subtype')
+    #     }else{
+    #         if (grep('.+[Jj][Ss][Oo][Nn]$', subtype) > 1)
+    #             warning('echart only accepts the first geoJSON file.')
+    #         geoJSON = subtype[grep('.+[Jj][Ss][Oo][Nn]$', subtype)][1]
+    #         con = system.file('htmlwidgets/lib/echarts/ext/loadGeoJSON.js',
+    #                            package='recharts2')
+    #         paramPath = system.file('htmlwidgets/lib/echarts/ext',
+    #                                  package='recharts2')
+    #         if (file.exists(con)){
+    #             writeLines(paste0(
+    #                 "require('", paramPath, "/param').params.newmap = { ",
+    #                 "getGeoJson: function (callback) { ",
+    #                 "$.getJSON('", geoJSON, "',callback);","}})"),
+    #                 con)
+    #         }
+    #     }
 
     ## Convert chart type to a data.frame, modify df layout
     ## colnames: [id name type subtype misc coordSys]
@@ -355,10 +365,10 @@ echart.data.frame = function(
     # }
 
     # ---------------------------params list----------------------
-    .makeSeriesList = cmpfun(function(t){
+    .makeSeriesList = function(t){
         # each timeline create an options list
         # inherits seriesData, dfType, lstSubtype, layout
-        #browser()
+
         if (is.null(t)){  # no timeline
             time_metaData = lapply(seriesData, function(lst){
                 lapply(lst, function(df){
@@ -376,23 +386,24 @@ echart.data.frame = function(
                            subtype = lstSubtype[[i]], layout = layout[i,],
                            meta = metaData, fullMeta = fullMeta)
             })
-            out = structure(list(series=lstSeries),
-                            meta = seriesData, layout = layout)
+            out = structure(list(series=lstSeries), meta = seriesData)
             # out = structure(seriesData, layout=layout)
         }else{  # with timeline
-            time_metaData = lapply(seriesData, function(lst){
-                lapply(lst, function(df) {
-                    lapply(df, function(col){
-                        if (inherits(col, c("Date", "POSIXlt", "POSIXct")))
-                            col = convTimestamp(col)
-                        return(col)
+            time_metaData = lapply(seriesData, function(lstT){
+                lapply(lstT, function(lst) {
+                    lapply(lst, function(df) {
+                        data.frame(lapply(df, function(col){
+                            if (inherits(col, c("Date", "POSIXlt", "POSIXct")))
+                                col = convTimestamp(col)
+                            return(col)
+                        }))
                     })
                 })
             })
             lstSeries = lapply(1:nrow(layout), function(i) {
                 series_fun = getFromNamespace(paste0('series_', dfType$type[i]),
                                               'recharts2')
-                series_fun(time_metaData[[t]], type = dfType[i,],
+                series_fun(time_metaData[[t]][[i]], type = dfType[i,],
                            subtype = lstSubtype[[i]], layout = layout[i,],
                            meta = metaData, fullMeta = fullMeta)
             })
@@ -400,7 +411,7 @@ echart.data.frame = function(
         }
 
         return(out)
-    })
+    }
 
     if (hasT){  ## has timeline
         params = list(
@@ -435,12 +446,14 @@ echart.data.frame = function(
         'echarts', params, width = NULL, height = NULL, package = 'recharts2',
         dependencies = depJS, preRenderHook = function(instance) { instance }
     )
+    attr(chart$x, 'layout') = layout
+    attr(chart$x, 'fullMeta') = fullMeta
 browser()
 
     if (hasT)
         chart = chart %>% setTimeline(show=TRUE, data=uniT)
-    if (!is.null(geoJSON)) chart$geoJSON = geoJSON
-
+    #if (!is.null(geoJSON)) chart$geoJSON = geoJSON
+    chart = chart %>% autoFacetTitle()
     if (any(dfType$type %in% c('map'))){
         chart = chart %>% setTooltip() %>% setToolbox() %>% setLegend()
     }else if (any(dfType$type %in% c('heatmap'))){
@@ -575,7 +588,7 @@ determineType = function(x, y) {
     # when y is numeric, plot y against x; when y is NULL, treat x as a
     # categorical variable, and plot its frequencies
     if ((is.factor(x) || is.character(x)) && (is.numeric(y) || is.null(y)))
-        return('bar')
+        return('vbar')
     if (is.null(x) && is.ts(y)) return('line')
     # FIXME: 'histogram' is not a standard plot type of ECharts
     # http://echarts.baidu.com/doc/doc.html
@@ -583,7 +596,7 @@ determineType = function(x, y) {
         return('histogram')
     if ((inherits(x, c("Date", "POSIXlt", "POSIXct")) && is.numeric(y)))
         return('curve')
-    if (is.character(x) && is.character(y))
+    if ((is.character(x) || is.factor(x)) && (is.character(y) || is.factor(y)))
         return('bubble')
     message('The structure of x:')
     str(x)
@@ -610,4 +623,5 @@ getAttr = function(obj, attr){
 }
 
 getMeta = function(obj) getAttr(obj, 'meta')
+getFullMeta = function(obj) getAttr(obj, 'fullMeta')
 getLayout = function(obj) getAttr(obj, 'layout')

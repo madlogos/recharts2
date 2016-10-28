@@ -163,8 +163,8 @@ getSeriesPart = function(chart, element=c(
     ## 'category' is special, it returns data series based on different chart types
     stopifnot(inherits(chart, 'echarts'))
     element = match.arg(element)
-    hasZ = 'timeline' %in% names(chart$x)
-    if (hasZ){
+    hasT = 'baseOption' %in% names(chart$x)
+    if (hasT){
         data = try(sapply(seq_len(length(chart$x$options)), function(i) {
             sapply(chart$x$options[[i]]$series, function(lst) {
                 if (fetch.all) ifnull(lst[['data']], NA)
@@ -266,7 +266,7 @@ getSeriesPart = function(chart, element=c(
             }
         }
     }
-    if (hasZ && !drop && element %in% c(
+    if (hasT && !drop && element %in% c(
         'name', 'type', 'category', 'large', 'mapType'))
         obj = matrix(obj, ncol=length(chart$x$options))
     if (drop) obj = unlist(obj)
@@ -276,16 +276,16 @@ getSeriesPart = function(chart, element=c(
 
 analyzeSeries = function(chart, series){
     stopifnot(inherits(chart, 'echarts'))
-    hasZ = 'timeline' %in% names(chart$x)
+    hasT = 'baseOption' %in% names(chart$x)
     newSeries = NULL
     # note: do not extract 'category'
     lvlSeries = getSeriesPart(chart, 'name', drop=FALSE, fetch.all=TRUE)
-    allSeries = if (hasZ) apply(lvlSeries, 2, function(col) {
+    allSeries = if (hasT) apply(lvlSeries, 2, function(col) {
         seq_len(length(col))}) else seq_along(lvlSeries)  # index series
     dim(allSeries) = dim(lvlSeries)
-    lvlSeries = if (hasZ) lapply(1:ncol(lvlSeries), function(c) lvlSeries[,c]) else
+    lvlSeries = if (hasT) lapply(1:ncol(lvlSeries), function(c) lvlSeries[,c]) else
         list(lvlSeries)
-    allSeries = if (hasZ) lapply(1:ncol(allSeries), function(c) allSeries[,c]) else
+    allSeries = if (hasT) lapply(1:ncol(allSeries), function(c) allSeries[,c]) else
         list(allSeries)
 
     if (is.null(series)){  # null, then apply to all series
@@ -293,7 +293,7 @@ analyzeSeries = function(chart, series){
         series = allSeries
     }else{
         if (is.numeric(series)){
-            if (hasZ){
+            if (hasT){
                 series = lapply(allSeries, function(col) {
                     intersect(series, col)
                 })
@@ -307,7 +307,7 @@ analyzeSeries = function(chart, series){
         }else{
             newSeries = unlist(series)[! unlist(series) %in% getSeriesPart(
                 chart, 'name', fetch.all=TRUE)]
-            if (hasZ){
+            if (hasT){
                 lvlseries = lapply(lvlSeries, function(col) {
                     intersect(series, col)
                 })
@@ -377,7 +377,7 @@ filterSeriesParts = function(lst, type){
 getYFromEChart = function(chart, ...){
     ## get y series data and extract the unique values vector
     stopifnot(inherits(chart, 'echarts'))
-    hasZ = 'timeline' %in% names(chart$x)
+    hasT = 'baseOption' %in% names(chart$x)
     .getY = function(seriesData){
         if (! is.null(dim(seriesData))){
             if (dim(seriesData)[2] > 1){
@@ -389,7 +389,7 @@ getYFromEChart = function(chart, ...){
             return(seriesData)
         }
     }
-    if (hasZ){
+    if (hasT){
         y = sapply(chart$x$options, function(lst){
             Ys = sapply(lst$series, function(l) {
                 return(.getY(l$data))
@@ -780,7 +780,9 @@ asEchartData = function(x, na.string='-'){
     # convert matrix/data.frame or vector to JSON-list lists
     # and convert NA to '-'
     if (!is.null(dim(x))){
-        x[, apply(x, 2, is.factor)] = as.character(x[, apply(x, 2, is.factor)])
+        col.factors = if (is.data.frame(x)) sapply(x, is.factor) else
+            if (is.matrix(x)) sapply(1:ncol(x), function(col) is.factor(x[,col]))
+        x[, col.factors] = as.character(x[, col.factors])
         o = lapply(1:nrow(x), function(i){
             row = as.list(unname(I(x[i,])))
             row = lapply(row, function(e) {

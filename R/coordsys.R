@@ -251,16 +251,50 @@ setAxis = function(
     return(chart)
 }
 
+autoFacetTitle = function(chart){
+    stopifnot(inherits(chart, 'echarts'))
+    layout = getLayout(chart)
+    meta = getMeta(chart)
+    facet.name = if ('facet' %in% meta) names(meta$facet) else
+        names(meta[[1]]$facet)
+    hasT = 'baseOption' %in% names(chart$x)
+
+    if (max(layout$ifacet) == 1) return(chart)
+    f.layout = layout[!duplicated(layout$ifacet),]
+
+    f.text = paste0(facet.name[1], ': ', f.layout$row)
+    if (!all(is.na(f.layout$col)))
+        f.text = paste(f.text, paste0(facet.name[2], ': ', f.layout$col),
+                       sep=' | ')
+    f.layout$width = as.numeric(gsub('%', '', f.layout$width))
+    f.layout$left = as.numeric(gsub('%', '', f.layout$left))
+    lstTitle = lapply(unique(layout$ifacet), function(i){
+        list(text=f.text[i], meta='facet_title', top=f.layout$top[i],
+             left=paste0(f.layout$left[i] + f.layout$width[i]/2, '%'),
+             textAlign='center', backgroundColor='rgba(0,0,0,0.1)',
+             textStyle=list(fontSize = 12))
+    })
+    if (hasT){
+        chart$x$baseOption$title = append(
+            ifnull(chart$x$baseOption$title, list()), lstTitle)
+    }else{
+        chart$x$title = append(ifnull(chart$x$title, list()), lstTitle)
+    }
+    return(chart)
+}
 
 autoAxis = function(chart, hasSubAxis = TRUE, showMainAxis = TRUE, ...) {
     stopifnot(inherits(chart, 'echarts'))
     layout = getLayout(chart)
     layout = layout[layout$coordSys == 'cartesian2d',]
-    meta = getMeta(chart)
-    xlab = names(meta[[1]]$x)[1]
-    ylab = names(meta[[1]]$y)[1]
+    hasT = 'baseOption' %in% names(chart$x)
+    meta = getMeta(if (hasT) chart$x$options[[1]] else chart)
+    xlab = if ('x' %in% names(meta[[1]])) names(meta[[1]]$x)[1] else
+        names(meta$x)[1]
+    ylab = if ('y' %in% names(meta[[1]])) names(meta[[1]]$y)[1] else
+        names(meta$y)[1]
     if (nrow(layout) == 0) return(chart)
-    hasT = 'timeline' %in% names(chart$x)
+
     lstXAxis = lapply(unique(layout$xAxisIdx), function(x){
         type = if (hasT) axisType(getMeta(chart)[[1]][[x+1]]$x[,1], 'x') else
                 axisType(getMeta(chart)[[x+1]]$x[,1], 'x')
@@ -378,7 +412,7 @@ flipAxis = function(chart, flip=NULL, ...){
     flip = intersect(flip, which(layout$coordSys == 'cartesian2d'))
     if (length(flip) == 0) return(chart)
     gridIdx = unique(layout$coordIdx[flip])
-    hasT = 'timeline' %in% names(chart$x)
+    hasT = 'baseOption' %in% names(chart$x)
 
     if (hasT){
         if (all(c('xAxis', 'yAxis') %in% names(chart$x$baseOption))) {
@@ -507,7 +541,7 @@ setGrid = function(chart, index=1, left=NULL, top=60, right='10%', bottom=60,
     if (!inherits(chart, 'echarts'))
         stop('chart is not an Echarts object. ',
              'Check if you have missed a %>% in your pipe chain.')
-    hasT = 'timeline' %in% names(chart$x)
+    hasT = 'baseOption' %in% names(chart$x)
     types = getSeriesPart(chart, 'type')
     widget = match.arg(widget)
     if (widget == 'pane') widget = 'grid'
@@ -636,7 +670,7 @@ relocWidget = function(chart, widgets, x=NULL, y=NULL, x2=NULL, y2=NULL){
 .getGridParam = function(chart, control, pos, size, horizontal=TRUE){
     stopifnot(length(pos) == 4)  ## x, y, x2, y2
     stopifnot(length(size) == 2) ## height, width
-    hasT = 'timeline' %in% names(chart$x)
+    hasT = 'baseOption' %in% names(chart$x)
     if (hasT){
         if (control == 'timeline')  obj = chart$x$timeline
         else obj = chart$x$baseOption[[control]]
@@ -695,7 +729,7 @@ tuneGrid = function(chart, ...){
         stop('chart is not an Echarts object. ',
              'Check if you have missed a %>% in your pipe chain.')
     types = getSeriesPart(chart, 'type')
-    hasT = 'timeline' %in% names(chart$x)
+    hasT = 'baseOption' %in% names(chart$x)
     # if not Cartesian Coord chart, skip out
 
     controls = c('title', 'timeline', 'legend', 'toolbox', 'dataRange',
@@ -856,11 +890,11 @@ autoPolar = function(chart, type){
         stop('chart is not an Echarts object. ',
              'Check if you have missed a %>% in your pipe chain.')
     chartTypes = getSeriesPart(chart, 'type')
-    hasT = 'timeline' %in% names(chart$x)
+    hasT = 'baseOption' %in% names(chart$x)
     if (!all(chartTypes %in% c('radar'))) return(chart)
 
     # get chart meta data
-    hasT = 'timeline' %in% names(chart$x)
+    hasT = 'baseOption' %in% names(chart$x)
     if (hasT){
         data = lapply(chart$x$options, function(l) getMeta(l))
         list.names = names(data[[1]])
@@ -980,7 +1014,7 @@ setPolar = function(chart, polarIndex=NULL, center=c('50%', '50%'), radius='75%'
     chartTypes = getSeriesPart(chart, 'type')
     if (!all(chartTypes=='radar')) return(chart)
 
-    hasT = 'timeline' %in% names(chart$x)
+    hasT = 'baseOption' %in% names(chart$x)
     if (hasT){
         nIndex = length(chart$x$baseOption$series)
     }else{

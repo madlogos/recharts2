@@ -148,7 +148,7 @@ setTitle = function(chart, title=NULL, subtitle=NULL, link=NULL, sublink=NULL,
     if (!inherits(chart, 'echarts'))
         stop('chart is not an Echarts object. ',
              'Check if you have missed a %>% in your pipe chain.')
-    hasT = 'timeline' %in% names(chart$x)
+    hasT = 'baseOption' %in% names(chart$x)
     if (!missing(title)) title = ifnull(title, "")
     if (!missing(subtitle)) subtitle = ifnull(subtitle, "")
     if (hasT){  # has a timeline
@@ -168,8 +168,8 @@ setTitle = function(chart, title=NULL, subtitle=NULL, link=NULL, sublink=NULL,
                 titles = paste0(
                     rep(gsub("^\\[(.+)\\]\\((.+)\\)$", "\\1", title),
                         length(chart$x$options)), " (",
-                    attr(chart$x$timeline, 'sliceby'), ": ",
-                    chart$x$timeline$data, ")")
+                    attr(chart$x$baseOption$timeline, 'sliceby'), ": ",
+                    chart$x$baseOption$timeline$data, ")")
             }
         }else{
             titles = rep(NULL, length(chart$x$options))
@@ -387,7 +387,7 @@ setToolbox = function(chart, show=TRUE, language='cn',
     if (!inherits(chart, 'echarts'))
         stop('chart is not an Echarts object. ',
              'Check if you have missed a %>% in your pipe chain.')
-    hasT = 'timeline' %in% names(chart$x)
+    hasT = 'baseOption' %in% names(chart$x)
     if (hasT){
         if (is.null(show)) {
             chart$x$options[[1]]$toolbox = NULL
@@ -516,7 +516,7 @@ setDataZoom = function(chart, show=TRUE, pos=6, range=NULL, width=30,
     if (!inherits(chart, 'echarts'))
         stop('chart is not an Echarts object. ',
              'Check if you have missed a %>% in your pipe chain.')
-    hasT = 'timeline' %in% names(chart$x)
+    hasT = 'baseOption' %in% names(chart$x)
     if (hasT){
         if (is.null(show)) {
             chart$x$options[[1]]$dataZoom = NULL
@@ -660,7 +660,7 @@ setDataRange = function(
     if (!inherits(chart, 'echarts'))
         stop('chart is not an Echarts object. ',
              'Check if you have missed a %>% in your pipe chain.')
-    hasT = 'timeline' %in% names(chart$x)
+    hasT = 'baseOption' %in% names(chart$x)
     if (! is.null(valueRange[1])) {
         if (is.numeric(valueRange) && length(valueRange) > 1){
             min = range(valueRange)[1]
@@ -750,7 +750,7 @@ setLegend = function(
         stop('chart is not an Echarts object. ',
              'Check if you have missed a %>% in your pipe chain.')
 
-    hasT = 'timeline' %in% names(chart$x)
+    hasT = 'baseOption' %in% names(chart$x)
     series = getSeriesPart(chart, 'category', fetch.all=TRUE)
     if (!is.null(dim(series))) series = series[,1]
     series = series[ifna(series, '') !='']
@@ -974,7 +974,7 @@ setTheme = function(
     if (!identical(theme, 'asis')) chart$x[['theme']] = theme
     if (missing(theme) || is.null(theme)) chart$x[['theme']] = NULL
 
-    hasT = 'timeline' %in% names(chart$x)
+    hasT = 'baseOption' %in% names(chart$x)
 
     ## set colors
     ### get color
@@ -1091,12 +1091,12 @@ setTheme = function(
 
     if (!missing(animationDuration)){
         lst[['animationDuration']] = animationDuration
-        if (hasT) chart$x$timeline[['playInterval']] = animationDuration
+        if (hasT) chart$x$baseOption$timeline[['playInterval']] = animationDuration
     }
 
     ## merge list back to echarts object
     if (hasT) {
-        lsts[[1]] = lst
+        chart$x$baseOption = mergeList(chart$x$baseOption, lst)
         chart$x$options = lsts
     }else chart$x = lst
 
@@ -1104,7 +1104,7 @@ setTheme = function(
     if (!is.null(width)) chart[['width']] = width
     if (!is.null(height)) chart[['height']] = height
 
-    return(chart %>% tuneGrid())
+    return(chart)
 }
 
 makeTooltip = function(type, trigger=NULL, formatter=NULL,
@@ -1353,7 +1353,7 @@ setTooltip = function(chart, series=NULL, timeslots=NULL, trigger=NULL,
     uniSeries = getSeriesPart(chart, 'category', fetch.all=TRUE)
     if (!is.null(dim(uniSeries))) uniSeries = uniSeries[,1]
 
-    hasT = 'timeline' %in% names(chart$x)
+    hasT = 'baseOption' %in% names(chart$x)
     timeXAxis = FALSE
     if (! hasT) {
         timeslots = NULL
@@ -1362,7 +1362,7 @@ setTooltip = function(chart, series=NULL, timeslots=NULL, trigger=NULL,
             timeXAxis = TRUE
         }
     }else{
-        timeslotsIndex = seq_len(length(chart$x$timeline$data))
+        timeslotsIndex = seq_len(length(chart$x$baseOption$timeline$data))
         if (!is.null(timeslots)){
             if (all(is.numeric(timeslots))){
                 vecZ = timeslots[timeslots %in% timeslotsIndex]
@@ -1439,7 +1439,7 @@ setTooltip = function(chart, series=NULL, timeslots=NULL, trigger=NULL,
                           chartTypes[1, vecZ], "')")
             # the following item to vecZ be reset to default
             vecZ1 = vecZ + 1
-            if (any(vecZ1 > length(chart$x$timeline$data))){
+            if (any(vecZ1 > length(chart$x$baseOption$timeline$data))){
                 vecZ1[length(vecZ1)] = min(timeslotsIndex[!timeslotsIndex %in%
                                                                c(vecZ, vecZ1)])
             }
@@ -1452,7 +1452,7 @@ setTooltip = function(chart, series=NULL, timeslots=NULL, trigger=NULL,
     }else{  # set along s and t
         vecZS = as.matrix(expand.grid(vecZ, vecS))
         vecZ1 = vecZ + 1
-        if (any(vecZ1 > length(chart$x$timeline$data))){
+        if (any(vecZ1 > length(chart$x$baseOption$timeline$data))){
             vecZ1[length(vecZ1)] = min(timeslotsIndex[!timeslotsIndex %in%
                                                            c(vecZ, vecZ1)])
         }
@@ -1576,12 +1576,12 @@ setTimeline = function(chart, show=TRUE, type=c('time', 'number'), realtime=TRUE
     if (!inherits(chart, 'echarts'))
         stop('chart is not an Echarts object. ',
              'Check if you have missed a %>% in your pipe chain.')
-    if (! 'timeline' %in% names(chart$x)) return(chart)
+    if (! 'baseOption' %in% names(chart$x)) return(chart)
     else if (is.null(show)) {
-        chart$x$timeline = NULL
+        chart$x$baseOption$timeline = NULL
         return(chart %>% tuneGrid())
     }
-    lst = chart$x$timeline
+    lst = chart$x$baseOption$timeline
     type = match.arg(type)
     if (inherits(getMeta(chart$x$options[[1]])$t[,1],
                  c("Date", "POSIXct", "POSIXlt"))){
@@ -1666,7 +1666,7 @@ setTimeline = function(chart, show=TRUE, type=c('time', 'number'), realtime=TRUE
     if (! ifnull(symbolSize, 4) == 4) lst$symbolSize = symbolSize
     if (! ifnull(currentIndex, 0) == 0) lst$currentIndex = currentIndex
     if (! is.null(data)) lst$data = data
-    chart$x$timeline = lst
+    chart$x$baseOption$timeline = lst
 
     return(chart %>% tuneGrid())
 }
@@ -1700,7 +1700,7 @@ addGeoCoord = function(chart, geoCoord=NULL, mode=c('add', 'overide')){
              'Check if you have missed a %>% in your pipe chain.')
     mode = match.arg(mode)
     if (is.null(geoCoord)) return(chart)
-
+    hasT = 'baseOption' %in% names(chart$x)
     if (is.data.frame(geoCoord)){
         if (ncol(geoCoord) < 3) stop('geoCoord must contain place, lng, lat!')
         nameGeoCoord = as.character(geoCoord[,1])
@@ -1709,7 +1709,7 @@ addGeoCoord = function(chart, geoCoord=NULL, mode=c('add', 'overide')){
         }))
         names(geoCoord) = nameGeoCoord
         lstGeoCoord = geoCoord
-        if ('timeline' %in% names(chart$x)){
+        if (hasT){
             if (chart$x$options[[1]]$series[[1]]$type == 'map')
                 if (mode == 'add')
                     if ('geoCoord' %in% names(chart$x$options[[1]]$series[[1]]))
@@ -1726,7 +1726,7 @@ addGeoCoord = function(chart, geoCoord=NULL, mode=c('add', 'overide')){
         }
     }else if (is.list(geoCoord)){
         if (is.null(names(geoCoord))) stop('geoCoord list must be named with places!')
-        if ('timeline' %in% names(chart$x)){
+        if (hasT){
             if (chart$x$options[[1]]$series[[1]]$type == 'map')
                 if (mode == 'add')
                     if ('geoCoord' %in% names(chart$x$options[[1]]$series[[1]]))
@@ -1809,7 +1809,7 @@ addHeatmap = function(chart, series=NULL, timeslots=NULL, data=NULL,
              'Check if you have missed a %>% in your pipe chain.')
     mode = match.arg(mode)
     if ('t' %in% names(list(...))) timeslots = list(...)[['t']]
-    hasT = 'timeline' %in% names(chart$x)
+    hasT = 'baseOption' %in% names(chart$x)
 
     if (is.null(data)) {
         return(chart)
@@ -1844,7 +1844,7 @@ addHeatmap = function(chart, series=NULL, timeslots=NULL, data=NULL,
             if (is.numeric(timeslots)){
                 timeslots = intersect(timeslots, seq_along(chart$x$options))
             }else{
-                timeslots = which(chart$x$timeline$data %in% timeslots)
+                timeslots = which(chart$x$baseOption$timeline$data %in% timeslots)
             }
     }else{
         timeslots = NULL
@@ -1943,7 +1943,7 @@ addNameMap = function(chart, nameMap, mode=c('add', 'overide')){
             stop('list nameMap must be named with the names you want to translate!')
         lstNameMap = nameMap
     }
-    hasT = 'timeline' %in% names(chart$x)
+    hasT = 'baseOption' %in% names(chart$x)
     if(hasT){
         if (mode == 'add')
             if ('nameMap' %in% names(chart$x$options[[1]]$series[[1]]))
@@ -2027,7 +2027,7 @@ addMarkLine = function(
         stop('chart is not an Echarts object. ',
              'Check if you have missed a %>% in your pipe chain.')
     if ('t' %in% names(list(...))) timeslots = list(...)[['t']]
-    hasT = 'timeline' %in% names(chart$x)
+    hasT = 'baseOption' %in% names(chart$x)
 
     # data validation
     if (is.null(data)) {
@@ -2068,7 +2068,7 @@ addMarkLine = function(
             if (is.numeric(timeslots)){
                 timeslots = intersect(timeslots, seq_along(chart$x$options))
             }else{
-                timeslots = which(chart$x$timeline$data %in% timeslots)
+                timeslots = which(chart$x$baseOption$timeline$data %in% timeslots)
             }
     }else{
         timeslots = NULL
@@ -2315,7 +2315,7 @@ addMarkPoint = function(
         stop('chart is not an Echarts object. ',
              'Check if you have missed a %>% in your pipe chain.')
     if ('t' %in% names(list(...))) timeslots = list(...)[['t']]
-    hasT = 'timeline' %in% names(chart$x)
+    hasT = 'baseOption' %in% names(chart$x)
 
     # data validation
     if (is.null(data)) {
@@ -2364,7 +2364,7 @@ addMarkPoint = function(
             if (is.numeric(timeslots)){
                 timeslots = intersect(timeslots, seq_along(chart$x$options))
             }else{
-                timeslots = which(chart$x$timeline$data %in% timeslots)
+                timeslots = which(chart$x$baseOption$timeline$data %in% timeslots)
             }
     }else{
         timeslots = NULL
@@ -2772,7 +2772,7 @@ setSeries = function(chart, series=NULL, timeslots=NULL, ...){
     validTypes = c(
         'line', 'bar', 'scatter', 'pie', 'radar', 'chord','force', 'map', 'gauge',
         'funnel', 'eventRiver', 'treemap', 'tree', 'wordCloud', 'heatmap')
-    hasT = 'timeline' %in% names(chart$x)
+    hasT = 'baseOption' %in% names(chart$x)
     lst = list(...)
 
     # define t
@@ -2783,7 +2783,7 @@ setSeries = function(chart, series=NULL, timeslots=NULL, ...){
             if (is.numeric(timeslots)){
                 timeslots = intersect(timeslots, seq_along(chart$x$options))
             }else{
-                timeslots = which(chart$x$timeline$data %in% timeslots)
+                timeslots = which(chart$x$baseOption$timeline$data %in% timeslots)
             }
     }else{
         timeslots = NULL
