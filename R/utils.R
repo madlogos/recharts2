@@ -30,7 +30,7 @@ evalVarArg = function(x, data, simplify=FALSE, eval=TRUE){
     ## evalVarArg(c(Species, Sepal.Width), iris)
     ## evalVarArg(c(as.numeric(Species), Sepal.Width), iris)
     ## evalVarArg(c(as.numeric(Species)+1, Sepal.Width), iris)
-    ## evalVarArg(factor(am, labels=c('M', 'A')), mtcars)
+    ## evalVarArg(factor(am, labels=c('A', 'M')), mtcars)
     # character, don't coerce; otherwise, coerce to formula
 
     # coerce x to formula if is symbol

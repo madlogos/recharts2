@@ -14,14 +14,14 @@
 #' app = shinyApp(
 #'   ui = fluidPage(eChartOutput('myChart')),
 #'   server = function(input, output) {
-#'     chart = echart(x = rnorm(100), y = rnorm(100))
+#'     chart = echart(data.frame(x = rnorm(100), y = rnorm(100)), x, y)
 #'     output$myChart = renderEChart(chart)
 #'   }
 #' )
 #'
 #' if (interactive()) print(app)}
-eChartOutput = function(outputId, width = '100%', height = '400px') {
-  htmlwidgets::shinyWidgetOutput(outputId, 'echarts', width, height, package = 'recharts')
+eChartOutput = function(outputId, width = '100%', height = '100%') {
+  htmlwidgets::shinyWidgetOutput(outputId, 'echarts', width, height, package = 'recharts2')
 }
 
 #' @param expr an R expression to return an EChart widget

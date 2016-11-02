@@ -9,8 +9,8 @@
 #' @rdname eChart
 #' @export
 #' @examples library(recharts2)
-#' echart(iris, ~ Sepal.Length, ~ Sepal.Width)
-#' echart(iris, ~ Sepal.Length, ~ Sepal.Width, series = ~ Species)
+#' echart(iris, Sepal.Length, Sepal.Width)
+#' echart(iris, Sepal.Length, Sepal.Width, series = Species)
 echart = function(data, ...) {
     UseMethod('echart')
 }
@@ -274,7 +274,7 @@ echart.data.frame = function(
         seriesData = .splitFacetSeries(data)
         seriesData = lapply(seriesData, .makeMetaDataList)
     }
-browser()
+
     # -----------------check / determine chart types--------------------------
     check.types = unname(sapply(c('auto', validChartTypes$name),
                                  grepl, x=layout$type))
@@ -365,7 +365,7 @@ browser()
     # }
 
     # ---------------------------params list----------------------
-    .makeSeriesList = function(t){
+    .makeSeriesList = cmpfun(function(t){
         # each timeline create an options list
         # inherits seriesData, dfType, lstSubtype, layout
 
@@ -386,7 +386,7 @@ browser()
                            subtype = lstSubtype[[i]], layout = layout[i,],
                            meta = metaData, fullMeta = fullMeta)
             })
-            out = structure(list(series=lstSeries), meta = seriesData)
+            out = structure(list(series = lstSeries), meta = seriesData)
             # out = structure(seriesData, layout=layout)
         }else{  # with timeline
             time_metaData = lapply(seriesData, function(lstT){
@@ -411,7 +411,7 @@ browser()
         }
 
         return(out)
-    }
+    })
 
     if (hasT){  ## has timeline
         params = list(
@@ -460,7 +460,7 @@ browser()
         chart = chart %>% autoAxis(TRUE, FALSE) %>%
             setGrid(borderWidth=0)
     }else if (any(dfType$type %in% c(
-        'line', 'bar', 'scatter', 'candlestick'))){
+        'line', 'bar', 'scatter', 'candlestick', 'effectScatter', 'lines', 'boxplot'))){
         chart = chart %>% autoAxis() %>%
             setTooltip() %>% setToolbox() %>% setLegend() %>%
             flipAxis(flip=which(grepl("flip", dfType$misc)))

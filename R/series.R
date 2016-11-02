@@ -66,10 +66,15 @@ series_scatter = function(lst, type, subtype, layout, meta, fullMeta, return=NUL
     }
     if (!is.null(lst$series)) if (length(lst$series[[1]])>0 && !is.na(lst$series[1,1]))
         obj$name = as.character(lst$series[1,1])
+    if (type$type == 'effectScatter')
+        obj$rippleEffect = list(brushType='stroke')
+
     obj = setCoordIndex(obj, layout$coordSys, layout$coordIdx)
 
     return(obj[intersect(names(obj), ifnull(return, names(obj)))])
 }
+
+series_effectScatter = series_scatter
 
 series_bar = function(lst, type, subtype, layout, meta, fullMeta, return=NULL, ...){
     # example:
@@ -82,7 +87,7 @@ series_bar = function(lst, type, subtype, layout, meta, fullMeta, return=NULL, .
     if (length(lst$x[[1]]) == 0) return(list(type=type$type[1], data=list(), name=''))
 
     data = data.frame(y=ifnull(lst$y[,1], NA), x=lst$x[,1])
-browser()
+
     if (!'y' %in% names(lst)) {  # y is null, then...
         if (any(grepl('hist', type$misc))){  # histogram
             hist = hist(data[,2], plot=FALSE)
@@ -106,6 +111,7 @@ browser()
     data1 = data.frame(y=NA, x=meta$x[,1])
     data1$y[data1$x %in% data$x] = data$y
     data = data1
+    rm(data1)
 
     # weight link to barWidth/lineWidth
     barWidths = NULL
@@ -201,7 +207,7 @@ series_line = function(lst, type, subtype, layout, meta, fullMeta, return=NULL, 
             obj$showAllSymbol = TRUE
         }
     }
-
+    obj = setCoordIndex(obj, layout$coordSys, layout$coordIdx)
     return(obj[intersect(names(obj), ifnull(return, names(obj)))])
 }
 
@@ -210,7 +216,7 @@ series_candlestick = function(lst, type, subtype, layout, meta, fullMeta, return
     # g=echart(stock, date, c(open, close, low, high), type='k')
 
     obj = list(list(name='Stock', type=type$type[1], data=asEchartData(lst$y[,1:4])))
-
+    obj = setCoordIndex(obj, layout$coordSys, layout$coordIdx)
     return(obj[intersect(names(obj), ifnull(return, names(obj)))])
 }
 
@@ -218,7 +224,7 @@ series_pie = function(lst, type, subtype, layout, meta, fullMeta, return=NULL, .
     # Example:
     # g=echart(iris, Species, Sepal.Width, type='pie')
     # g=echart(mtcars, am, mpg, gear, type='pie')
-    # g=echart(mtcars, y=mpg, series=gear,type='ring')
+    # g=echart(mtcars, y=mpg, series=gear, type='ring')
     ## ring_info
     # ds=data.frame(q=c('68% feel good', '29% feel bad', '3% have no feelings'),
     #               a=c(68, 29, 3))
@@ -228,140 +234,144 @@ series_pie = function(lst, type, subtype, layout, meta, fullMeta, return=NULL, .
     # g %>% setLegend(pos=c('center','top','vertical'),
     #                 itemGap=JS(paste0(dev.height,"*0.4/3"))) %>%
     #       relocLegend(x=JS(paste0(dev.width,"/2")), y=JS(paste0(dev.height,"/10")))
-
+browser()
     if (is.null(lst$y)) stop('pie/funnel charts need y!')
-    if (is.null(lst$x) && is.null(lst$series)) stop('pie/funnel charts need either x or series!')
-    data = data.frame(lst$y[,1])
-    if (!is.null(lst$x)){
-        data[,2] = if (matchSubtype('info', subtype))
-            'TRUE' else lst$x[,1]
-        series = if (matchSubtype('info', subtype))
-            c('TRUE', 'FALSE') else as.character(unique(lst$x[,1]))
-    }else{
-        data[,2] = if (matchSubtype('info', subtype))
-            lst$series[,1] else 'TRUE'
-        series = if (matchSubtype('info', subtype))
-            as.character(unique(lst$series[,1])) else c('TRUE','FALSE')
-    }
-    if (!is.null(lst$series)){
-        data[,3] = lst$series[,1]
-        pies = as.character(unique(lst$series[,1]))
-    }else{
-        data[,3] = if (matchSubtype('info', subtype))
-            lst$x[,1] else 'Proportion'
-        pies = if (any(sapply(subtype, function(x) 'info' %in% x)))
-            as.character(unique(lst$x[,1])) else 'Proportion'
-        if (any(sapply(subtype, function(x) 'info' %in% x))){
-            type[2:length(pies),] = type[1,]
-            if (length(subtype) < length(type))
-                subtype = rep(subtype[length(subtype)],
-                               length(type)-length(subtype))
+    if (is.null(lst$x) && is.null(lst$facet) && is.null(lst$series))
+        stop('pie/funnel charts need either x or series or facet!')
+    data = data.frame(y=lst$y[,1])
+    if (!is.null(lst$x)){  # there is x
+        if (length(unique(lst$x[,1])) == 1) {
+            data[,'x'] = 'TRUE'
+            series = c('TRUE', 'FALSE')
+        }else{
+            data[,'x'] = lst$x[,1]
+            series = as.character(unique(lst$x[,1]))
         }
-
+    }else{  # there is no x
+        if (!is.null(lst$series)){
+            data[,'x'] = lst$series[,1]
+            series = as.character(unique(lst$series[,1]))
+        }else{
+            data[,'x'] = 'TRUE'
+            series = c('TRUE','FALSE')
+        }
     }
-    names(data) = c('y', 'x', 'series')
-    data = data.table::dcast(data, x~series, sum, value.var='y')
+    data[,'series'] = if (is.null(lst$series)) NA else lst$series[,1]
+    data[,'facet'] = if (is.null(lst$facet)) names(lst$y)[1] else lst$facet[,1]
+    # if (!is.null(lst$series)){
+    #     data[,3] = lst$series[,1]
+    #     pies = as.character(unique(lst$series[,1]))
+    # }else{
+    #     data[,3] = if (matchSubtype('info', subtype))
+    #         lst$x[,1] else 'Proportion'
+    #     pies = if (any(sapply(subtype, function(x) 'info' %in% x)))
+    #         as.character(unique(lst$x[,1])) else 'Proportion'
+    #     if (any(sapply(subtype, function(x) 'info' %in% x))){
+    #         type[2:length(pies),] = type[1,]
+    #         if (length(subtype) < length(type))
+    #             subtype = rep(subtype[length(subtype)],
+    #                            length(type)-length(subtype))
+    #     }
+    #
+    # }
 
+    data = data.table::dcast(data, facet + series + x~., sum, value.var='y')
+    names(data) = c('facet', 'series', 'x', 'y')
     if (all(data$x == 'TRUE')) {
         sum.prop = sum(data[data$x == 'TRUE', 2:ncol(data)], na.rm=TRUE)
         data[nrow(data)+1, ] = c('FALSE', sum.prop - data[data$x == 'TRUE',
                                                            2:ncol(data)])
     }
-    if (is.null(lst$t)){
-        layouts = autoMultiPolarChartLayout(length(pies))
-    }else{
-        layouts = autoMultiPolarChartLayout(length(pies), bottom=15)
-    }
+    # if (is.null(lst$t)){
+    #     layouts = autoMultiPolarChartLayout(length(pies))
+    # }else{
+    #     layouts = autoMultiPolarChartLayout(length(pies), bottom=15)
+    # }
 
-    rows = layouts$rows
-    cols = layouts$cols
-    centers = layouts$centers
-    rownames(centers) = pies
-    radius = layouts$radius
+    # rows = layouts$rows
+    # cols = layouts$cols
+    # centers = layouts$centers
+    # rownames(centers) = pies
+    # radius = layouts$radius
 
     ## place holder styles
-    placeHolderStyle = list(normal = list(
+    placeHolderStyle = list(
+        normal = list(
             color = 'rgba(0,0,0,0)', label = list(show=FALSE),
             labelLine = list(show=FALSE)
         ),
         emphasis = list(color = 'rgba(0,0,0,0)')
     )
-    grayStyle = list(normal = list(
-        color='#ccc', label=list(show=FALSE, position='center'),
-        labelLine=list(show=FALSE)
+    grayStyle = list(
+        normal = list(
+            color='#ccc', label=list(show=FALSE, position='center'),
+            labelLine=list(show=FALSE)
         ),
         emphasis=list(color='rgba(0,0,0,0)')
     )
-    normalStyle = list(normal=list(label=list(show=FALSE),
-                                  labelLine=list(show=FALSE)))
+    normalStyle = list(normal=list(label=list(
+        show=FALSE), labelLine=list(show=FALSE)))
 
-    obj = list()
-    for (pie in pies){
-        iType = type[which(pies == pie),]
-        iSubtype = subtype[[which(pies == pie)]]
-        o = list(
-            name=pie, type=iType$type,
-            data=unname(apply(data[,c('x', pie)], 1, function(row) {
-                if (row[1] == 'FALSE')
-                    return(list(name='', value= ifna(as.numeric(row[2]), '-'),
-                         itemStyle=grayStyle))
-                else
-                    return(list(name=ifelse(as.character(unname(row[1]))=='TRUE',
-                                            pie, as.character(unname(row[1]))),
-                                value=ifna(as.numeric(unname(row[2])), '-'),
-                                itemStyle=normalStyle))
-                })),
-            center=paste0(unname(centers[pie,]), '%'), width=paste0(radius, '%'),
-            x=paste0(centers[pie, 1]-radius/2, '%'), radius=paste0(radius, '%'),
-            max=ifelse(all(is.na(data[,pie])), 0,
-                       max(unname(data[,pie]), na.rm=TRUE)),
-            height=ifelse(rows==1, '70%', paste0(radius, '%')),
-            y=ifelse(rows==1, rep('15%', length(pies)), paste0(centers[pie, 2]-radius/2, '%')),
-            selectedMode=if ('multi' %in% iSubtype) 'multiple' else NULL
+    obj = list(
+        name=data$facet[1], type=type$type,
+        data=unname(apply(data[,c('x', 'y')], 1, function(row) {
+            if (row[1] == 'FALSE')
+                return(list(name='', value= ifna(as.numeric(row[2]), '-'),
+                     itemStyle=grayStyle))
+            else
+                return(list(name=ifelse(as.character(unname(row[1]))=='TRUE',
+                                        pie, as.character(unname(row[1]))),
+                            value=ifna(as.numeric(unname(row[2])), '-'),
+                            itemStyle=normalStyle))
+            })),
+        center=paste0(unname(centers[pie,]), '%'), width=paste0(radius, '%'),
+        x=paste0(centers[pie, 1]-radius/2, '%'), radius=paste0(radius, '%'),
+        max=ifelse(all(is.na(data[,pie])), 0,
+                   max(unname(data[,pie]), na.rm=TRUE)),
+        height=ifelse(rows==1, '70%', paste0(radius, '%')),
+        y=ifelse(rows==1, rep('15%', length(pies)), paste0(centers[pie, 2]-radius/2, '%')),
+        selectedMode=if ('multi' %in% iSubtype) 'multiple' else NULL
+    )
+    if (grepl('ring', type$misc)){
+        obj[['radius']] = paste0(c(radius * 2/3, radius), '%')
+        obj[['itemStyle']] = list(
+            normal=list(label=list(show=TRUE)),
+            emphasis=list(label=list(show=TRUE, position='center', textStyle=list(
+                fontSize='30', fontWeight='bold'
+            )))
         )
-        if (grepl('ring', iType$misc)){
-            o[['radius']] = paste0(c(radius * 2/3, radius), '%')
-            o[['itemStyle']] = list(
-                normal=list(label=list(show=TRUE)),
-                emphasis=list(label=list(show=TRUE, position='center', textStyle=list(
-                    fontSize='30',fontWeight='bold'
-                )))
-            )
-            o[['clockWise']] = any(c('clock', 'clockwise') %in% iSubtype)
+        obj[['clockWise']] = any(c('clock', 'clockwise') %in% subtype)
+    }
+    if ('radius' %in% subtype){
+        obj[['roseType']] = 'radius'
+        obj[['radius']] = paste0(c(radius/5, radius), '%')
+    }else if ('area' %in% iSubtype){
+        obj[['roseType']] = 'area'
+        obj[['radius']] = paste0(c(radius/5, radius), '%')
+    }else if ('info' %in% iSubtype){
+        obj[['data']][[2]][['itemStyle']] = placeHolderStyle
+        ringWidth = 40 / length(pies)
+        obj[['radius']] = paste0(c(80 - ringWidth*(which(pies == pie)-1),
+                                  80 - ringWidth*which(pies == pie)), '%')
+        obj[['center']] = c('50%', '50%')
+        obj[['clockWise']] = any(c('clock', 'clockwise') %in% subtype)
+    }else{
+        if (is.null(obj)) obj[['radius']] = paste0(radius, '%')
+    }
+    ## additional for funnel charts
+    if (type$type == 'funnel'){
+        if (grepl('ascending', iType$misc)) obj[['sort']] = 'ascending'
+        obj[['itemStyle']] = mergeList(obj[['itemStyle']], list(normal=list(
+            labelLine=list(show=TRUE)))
+        )
+        if ('left' %in% iSubtype){
+            obj[['funnelAlign']] = 'left'
+        }else if ('right' %in% iSubtype){
+            obj[['funnelAlign']] = 'right'
         }
-        if ('radius' %in% iSubtype){
-            o[['roseType']] = 'radius'
-            o[['radius']] = paste0(c(radius/5, radius), '%')
-        }else if ('area' %in% iSubtype){
-            o[['roseType']] = 'area'
-            o[['radius']] = paste0(c(radius/5, radius), '%')
-        }else if ('info' %in% iSubtype){
-            o[['data']][[2]][['itemStyle']] = placeHolderStyle
-            ringWidth = 40 / length(pies)
-            o[['radius']] = paste0(c(80 - ringWidth*(which(pies == pie)-1),
-                                      80 - ringWidth*which(pies == pie)), '%')
-            o[['center']] = c('50%', '50%')
-            o[['clockWise']] = any(c('clock', 'clockwise') %in% iSubtype)
-        }else{
-            if (is.null(o)) o[['radius']] = paste0(radius, '%')
-        }
-        ## additional for funnel charts
-        if (iType$type == 'funnel'){
-            if (grepl('ascending', iType$misc)) o[['sort']] = 'ascending'
-            o[['itemStyle']] = mergeList(o[['itemStyle']], list(normal=list(
-                labelLine=list(show=TRUE)))
-            )
-            if ('left' %in% iSubtype){
-                o[['funnelAlign']] = 'left'
-            }else if ('right' %in% iSubtype){
-                o[['funnelAlign']] = 'right'
-            }
-        }
-
-        obj[[pie]] = o
     }
     obj = unname(obj)
-
+    obj = setCoordIndex(obj, layout$coordSys, layout$coordIdx)
     return(obj[intersect(names(obj), ifnull(return, names(obj)))])
 }
 
