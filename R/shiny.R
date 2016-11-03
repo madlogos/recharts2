@@ -21,7 +21,8 @@
 #'
 #' if (interactive()) print(app)}
 eChartOutput = function(outputId, width = '100%', height = '100%') {
-  htmlwidgets::shinyWidgetOutput(outputId, 'echarts', width, height, package = 'recharts2')
+    htmlwidgets::shinyWidgetOutput(outputId, 'echarts', width, height,
+                                   package = 'recharts2')
 }
 
 #' @param expr an R expression to return an EChart widget
@@ -29,6 +30,6 @@ eChartOutput = function(outputId, width = '100%', height = '100%') {
 #' @rdname recharts-shiny
 #' @export
 renderEChart = function(expr, env = parent.frame(), quoted = FALSE) {
-  if (!quoted) expr = substitute(expr)  # force quoted
-  htmlwidgets::shinyRenderWidget(expr, eChartOutput, env, quoted = TRUE)
+    if (!quoted) expr = substitute(expr)  # force quoted
+    htmlwidgets::shinyRenderWidget(expr, eChartOutput, env, quoted = TRUE)
 }

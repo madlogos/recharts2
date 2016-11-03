@@ -384,7 +384,7 @@ echart.data.frame = function(
                                               'recharts2')
                 series_fun(seriesData[[i]], type = dfType[i,],
                            subtype = lstSubtype[[i]], layout = layout[i,],
-                           meta = metaData, fullMeta = fullMeta)
+                           meta = metaData, fullMeta = fullMeta, layouts = layout)
             })
             out = structure(list(series = lstSeries), meta = seriesData)
             # out = structure(seriesData, layout=layout)
@@ -405,7 +405,7 @@ echart.data.frame = function(
                                               'recharts2')
                 series_fun(time_metaData[[t]][[i]], type = dfType[i,],
                            subtype = lstSubtype[[i]], layout = layout[i,],
-                           meta = metaData, fullMeta = fullMeta)
+                           meta = metaData, fullMeta = fullMeta, layouts = layout)
             })
             out = structure(list(series = lstSeries), meta = metaData[[t]])
         }

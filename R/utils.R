@@ -416,7 +416,7 @@ setCoordIndex = function(lst, coordName, coordIdx){
     }else if (coordName == 'singleAxis'){
         lst$singleAxisIndex = coordIdx
     }
-    lst$coordinateSystem = as.character(coordName)
+    if (coordName == '') lst$coordinateSystem = as.character(coordName)
     return(lst)
 }
 
@@ -776,9 +776,10 @@ ifempty = ifblank
 ifzero = function(x, y) iif(x, y, 'is.zero')
 
 #--------------------data struc changes---------------------------
-asEchartData = function(x, na.string='-'){
+asEchartData = function(x, na.string = '-', named = FALSE, names=colnames(x)){
     # convert matrix/data.frame or vector to JSON-list lists
     # and convert NA to '-'
+
     if (!is.null(dim(x))){
         col.factors = if (is.data.frame(x)) sapply(x, is.factor) else
             if (is.matrix(x)) sapply(1:ncol(x), function(col) is.factor(x[,col]))
@@ -788,6 +789,8 @@ asEchartData = function(x, na.string='-'){
             row = lapply(row, function(e) {
                 e = ifna(e, na.string)
             })
+            if (named && !is.null(names))
+                if (length(row) == length(names)) names(row) = names
             return(row)
         })
         # if (nrow(x) == 1 && ncol(x) > 1)

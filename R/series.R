@@ -1,5 +1,7 @@
 #' @importFrom data.table melt
-series_scatter = function(lst, type, subtype, layout, meta, fullMeta, return=NULL, ...){
+series_scatter = function(
+    lst, type, subtype, layout, meta, fullMeta, layouts, return=NULL,
+...){
     # g = echart(mtcars, wt, mpg, am)
 
     if (is.null(lst$x) || is.null(lst$y))
@@ -76,7 +78,9 @@ series_scatter = function(lst, type, subtype, layout, meta, fullMeta, return=NUL
 
 series_effectScatter = series_scatter
 
-series_bar = function(lst, type, subtype, layout, meta, fullMeta, return=NULL, ...){
+series_bar = function(
+    lst, type, subtype, layout, meta, fullMeta, layouts, return=NULL,
+...){
     # example:
     # mtcars$model = row.names(mtcars)
     # echart(mtcars, model, mpg,
@@ -151,7 +155,9 @@ series_bar = function(lst, type, subtype, layout, meta, fullMeta, return=NULL, .
     return(obj[intersect(names(obj), ifnull(return, names(obj)))])
 }
 
-series_line = function(lst, type, subtype, layout, meta, fullMeta, return=NULL, ...) {
+series_line = function(
+    lst, type, subtype, layout, meta, fullMeta, layouts, return=NULL,
+...) {
     # Example:
     # g=echart(airquality, as.character(Day), Temp,t=Month, type='curve')
     # g=echart(airquality, as.character(Day), Temp,t=Month, type='area_smooth')
@@ -211,7 +217,9 @@ series_line = function(lst, type, subtype, layout, meta, fullMeta, return=NULL, 
     return(obj[intersect(names(obj), ifnull(return, names(obj)))])
 }
 
-series_candlestick = function(lst, type, subtype, layout, meta, fullMeta, return=NULL, ...){
+series_candlestick = function(
+    lst, type, subtype, layout, meta, fullMeta, layouts, return=NULL,
+...){
     # Example:
     # g=echart(stock, date, c(open, close, low, high), type='k')
 
@@ -220,10 +228,20 @@ series_candlestick = function(lst, type, subtype, layout, meta, fullMeta, return
     return(obj[intersect(names(obj), ifnull(return, names(obj)))])
 }
 
-series_pie = function(lst, type, subtype, layout, meta, fullMeta, return=NULL, ...){
+series_boxplot = function(
+    lst, type, subtype, layout, meta, fullMeta, layouts, return=NULL,
+    ...){
+
+}
+
+series_pie = function(
+    lst, type, subtype, layout, meta, fullMeta, layouts, return=NULL,
+...){
     # Example:
     # g=echart(iris, Species, Sepal.Width, type='pie')
     # g=echart(mtcars, am, mpg, gear, type='pie')
+    # g=echart(mtcars, am, mpg, facet=gear, type='pie')
+    # g=echart(mtcars, y=mpg, facet=gear, type='ring')
     # g=echart(mtcars, y=mpg, series=gear, type='ring')
     ## ring_info
     # ds=data.frame(q=c('68% feel good', '29% feel bad', '3% have no feelings'),
@@ -258,22 +276,6 @@ browser()
     }
     data[,'series'] = if (is.null(lst$series)) NA else lst$series[,1]
     data[,'facet'] = if (is.null(lst$facet)) names(lst$y)[1] else lst$facet[,1]
-    # if (!is.null(lst$series)){
-    #     data[,3] = lst$series[,1]
-    #     pies = as.character(unique(lst$series[,1]))
-    # }else{
-    #     data[,3] = if (matchSubtype('info', subtype))
-    #         lst$x[,1] else 'Proportion'
-    #     pies = if (any(sapply(subtype, function(x) 'info' %in% x)))
-    #         as.character(unique(lst$x[,1])) else 'Proportion'
-    #     if (any(sapply(subtype, function(x) 'info' %in% x))){
-    #         type[2:length(pies),] = type[1,]
-    #         if (length(subtype) < length(type))
-    #             subtype = rep(subtype[length(subtype)],
-    #                            length(type)-length(subtype))
-    #     }
-    #
-    # }
 
     data = data.table::dcast(data, facet + series + x~., sum, value.var='y')
     names(data) = c('facet', 'series', 'x', 'y')
@@ -282,17 +284,6 @@ browser()
         data[nrow(data)+1, ] = c('FALSE', sum.prop - data[data$x == 'TRUE',
                                                            2:ncol(data)])
     }
-    # if (is.null(lst$t)){
-    #     layouts = autoMultiPolarChartLayout(length(pies))
-    # }else{
-    #     layouts = autoMultiPolarChartLayout(length(pies), bottom=15)
-    # }
-
-    # rows = layouts$rows
-    # cols = layouts$cols
-    # centers = layouts$centers
-    # rownames(centers) = pies
-    # radius = layouts$radius
 
     ## place holder styles
     placeHolderStyle = list(
@@ -311,44 +302,47 @@ browser()
     )
     normalStyle = list(normal=list(label=list(
         show=FALSE), labelLine=list(show=FALSE)))
+    ringStyle = list(
+        normal=list(label=list(show=TRUE)),
+        emphasis=list(label=list(show=TRUE, position='center', textStyle=list(
+            fontSize='30', fontWeight='bold'))
+        )
+    )
 
     obj = list(
         name=data$facet[1], type=type$type,
-        data=unname(apply(data[,c('x', 'y')], 1, function(row) {
+        data=unname(apply(data[,c('x', 'y', 'series')], 1, function(row) {
             if (row[1] == 'FALSE')
                 return(list(name='', value= ifna(as.numeric(row[2]), '-'),
                      itemStyle=grayStyle))
             else
                 return(list(name=ifelse(as.character(unname(row[1]))=='TRUE',
-                                        pie, as.character(unname(row[1]))),
+                                        as.character(unname(row[3])),
+                                        as.character(unname(row[1]))),
                             value=ifna(as.numeric(unname(row[2])), '-'),
                             itemStyle=normalStyle))
             })),
-        center=paste0(unname(centers[pie,]), '%'), width=paste0(radius, '%'),
-        x=paste0(centers[pie, 1]-radius/2, '%'), radius=paste0(radius, '%'),
-        max=ifelse(all(is.na(data[,pie])), 0,
-                   max(unname(data[,pie]), na.rm=TRUE)),
-        height=ifelse(rows==1, '70%', paste0(radius, '%')),
-        y=ifelse(rows==1, rep('15%', length(pies)), paste0(centers[pie, 2]-radius/2, '%')),
-        selectedMode=if ('multi' %in% iSubtype) 'multiple' else NULL
+        center=c(layout$centerX, layout$centerY), width=layout$radius,
+        left=convNum2Pct(convPct2Num(layout$centerX)-convPct2Num(layout$radius)/2),
+        radius=layout$radius,
+        max=ifelse(all(is.na(data[,'y'])), 0,
+                   max(unname(data[,'y']), na.rm=TRUE)),
+        height=layout$radius,
+        top=layout$top,
+        selectedMode=if ('multi' %in% subtype) 'multiple' else NULL
     )
     if (grepl('ring', type$misc)){
-        obj[['radius']] = paste0(c(radius * 2/3, radius), '%')
-        obj[['itemStyle']] = list(
-            normal=list(label=list(show=TRUE)),
-            emphasis=list(label=list(show=TRUE, position='center', textStyle=list(
-                fontSize='30', fontWeight='bold'
-            )))
-        )
+        obj[['radius']] = convNum2Pct(convPct2Num(layout$radius) * c(2/3, 1))
+        obj[['itemStyle']] = ringStyle
         obj[['clockWise']] = any(c('clock', 'clockwise') %in% subtype)
     }
     if ('radius' %in% subtype){
         obj[['roseType']] = 'radius'
-        obj[['radius']] = paste0(c(radius/5, radius), '%')
-    }else if ('area' %in% iSubtype){
+        obj[['radius']] = convNum2Pct(convPct2Num(layout$radius) * c(0.2, 1))
+    }else if ('area' %in% subtype){
         obj[['roseType']] = 'area'
-        obj[['radius']] = paste0(c(radius/5, radius), '%')
-    }else if ('info' %in% iSubtype){
+        obj[['radius']] = convNum2Pct(convPct2Num(layout$radius) * c(0.2, 1))
+    }else if ('info' %in% subtype){
         obj[['data']][[2]][['itemStyle']] = placeHolderStyle
         ringWidth = 40 / length(pies)
         obj[['radius']] = paste0(c(80 - ringWidth*(which(pies == pie)-1),
@@ -356,7 +350,7 @@ browser()
         obj[['center']] = c('50%', '50%')
         obj[['clockWise']] = any(c('clock', 'clockwise') %in% subtype)
     }else{
-        if (is.null(obj)) obj[['radius']] = paste0(radius, '%')
+        if (is.null(obj)) obj[['radius']] = layout$radius
     }
     ## additional for funnel charts
     if (type$type == 'funnel'){
@@ -364,20 +358,22 @@ browser()
         obj[['itemStyle']] = mergeList(obj[['itemStyle']], list(normal=list(
             labelLine=list(show=TRUE)))
         )
-        if ('left' %in% iSubtype){
+        if ('left' %in% subtype){
             obj[['funnelAlign']] = 'left'
-        }else if ('right' %in% iSubtype){
+        }else if ('right' %in% subtype){
             obj[['funnelAlign']] = 'right'
         }
     }
-    obj = unname(obj)
+
     obj = setCoordIndex(obj, layout$coordSys, layout$coordIdx)
     return(obj[intersect(names(obj), ifnull(return, names(obj)))])
 }
 
 series_funnel = series_pie
 
-series_radar = function(lst, type, subtype, layout, meta, fullMeta, return=NULL, ...){
+series_radar = function(
+    lst, type, subtype, layout, meta, fullMeta, layouts, return=NULL,
+...){
     # Example:
     # cars = mtcars[c('Merc 450SE','Merc 450SL','Merc 450SLC'),
     #               c('mpg','disp','hp','qsec','wt','drat')]
@@ -458,7 +454,9 @@ series_radar = function(lst, type, subtype, layout, meta, fullMeta, return=NULL,
     return(obj[intersect(names(obj), ifnull(return, names(obj)))])
 }
 
-series_force = function(lst, type, subtype, layout, meta, fullMeta, return=NULL, ...){
+series_force = function(
+    lst, type, subtype, layout, meta, fullMeta, layouts, return=NULL,
+...){
     # x: node/link, x2: link, series: series/relation, y: weight/value
     # df with x2 NA is nodes, !NA is links. If all !NA, no categories are linked
     # or x: name column, y: matrix
@@ -581,7 +579,9 @@ series_force = function(lst, type, subtype, layout, meta, fullMeta, return=NULL,
 
 series_chord = series_force
 
-series_gauge = function(lst, type, subtype, layout, meta, fullMeta, return=NULL, ...){
+series_gauge = function(
+    lst, type, subtype, layout, meta, fullMeta, layouts, return=NULL,
+...){
     if (is.null(lst$x) || is.null(lst$y))
         stop('gauge charts need x and y!')
     data = data.frame(y=lst$y[,1], x=lst$x[,1])
@@ -623,7 +623,9 @@ series_gauge = function(lst, type, subtype, layout, meta, fullMeta, return=NULL,
     return(oout[intersect(names(out), ifnull(return, names(out)))])
 }
 
-series_map = function(lst, type, subtype, layout, meta, fullMeta, return=NULL, ...){
+series_map = function(
+    lst, type, subtype, layout, meta, fullMeta, layouts, return=NULL,
+...){
     # x[,1] x; x[,2] series; y[,1] value; y[,2] selected; series[,1] multi-maps
 
     # Example:
@@ -735,7 +737,9 @@ series_map = function(lst, type, subtype, layout, meta, fullMeta, return=NULL, .
 }
 
 
-series_wordCloud = function(lst, type, subtype, layout, meta, fullMeta, return=NULL, ...){
+series_wordCloud = function(
+    lst, type, subtype, layout, meta, fullMeta, layouts, return=NULL,
+...){
     # does not accept series
     if (is.null(lst$y) || is.null(lst$x))
         stop('wordCloud charts need x and y!')
@@ -770,7 +774,9 @@ series_wordCloud = function(lst, type, subtype, layout, meta, fullMeta, return=N
     return(o[intersect(names(o), ifnull(return, names(o)))])
 }
 
-series_eventRiver = function(lst, type, subtype, layout, fullMeta, return=NULL, ...){
+series_eventRiver = function(
+    lst, type, subtype, layout, fullMeta, layouts, return=NULL,
+...){
     # x: slice time, event name, slice title, slice url, slice img;
     # y: slice value, event weight;  series: series, series weight
     if (is.null(lst$x) || is.null(lst$y)) stop('eventRiver chart needs x and y!')
@@ -831,7 +837,9 @@ series_eventRiver = function(lst, type, subtype, layout, fullMeta, return=NULL, 
     return(out[intersect(names(out), ifnull(return, names(out)))])
 }
 
-series_venn = function(lst, type, layout, meta, fullMeta, return=NULL, ...){
+series_venn = function(
+    lst, type, layout, meta, fullMeta, layouts, return=NULL,
+...){
     # deleted
     if (is.null(lst$x) || is.null(lst$y)) stop('venn charts need x and y!')
     if (nrow(lst$y) < 3) stop('y has to have 3 rows with the last row be intersection.')
@@ -849,7 +857,9 @@ series_venn = function(lst, type, layout, meta, fullMeta, return=NULL, ...){
     return(o[intersect(names(o), ifnull(return, names(o)))])
 }
 
-series_treemap = function(lst, type, subtype, layout, meta, fullMeta, return=NULL, ...){
+series_treemap = function(
+    lst, type, subtype, layout, meta, fullMeta, layouts, return=NULL,
+...){
 
     if (is.null(lst$x) || is.null(lst$y))
         stop("treemap charts need x and y!")
@@ -918,7 +928,9 @@ series_tree = series_treemap
 # deleted
 
 #' @importFrom data.table between
-series_heatmap = function(lst, type, subtype, layout, meta, fullMeta, return=NULL, ...){
+series_heatmap = function(
+    lst, type, subtype, layout, meta, fullMeta, layouts, return=NULL,
+...){
     # data = rbind(data.frame(lng=100+rnorm(100,0, 1)*600,
     #        lat=150+rnorm(100,0, 1)*50, y=abs(rnorm(100,0,1))),
     # data.frame(lng=rnorm(200,0, 1)*1000,
