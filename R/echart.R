@@ -189,6 +189,8 @@ echart.data.frame = function(
     facets[,c('left', 'top', 'right', 'bottom')] = auto.layout$grids
     layout = merge(layout, facets, by='ifacet', sort=FALSE)
 
+
+
     # -----------------split df to lists---------------------
     .makeMetaDataList = cmpfun(function(df) {
         # generate metaData, df wrapped in lists
@@ -276,6 +278,7 @@ echart.data.frame = function(
     }
 
     # -----------------check / determine chart types--------------------------
+    ## ------------------Modify layout-------------------------
     check.types = unname(sapply(c('auto', validChartTypes$name),
                                  grepl, x=layout$type))
     if (is.null(dim(check.types)))
@@ -355,14 +358,24 @@ echart.data.frame = function(
             return(o)
         })
 
-    ## check types--- no longer needed
-    # if (nlevels(as.factor(dfType$type)) > 1){
-    #     if (!all(grepl("^(line|bar|scatter|k)", dfType$type) ||
-    #              grepl("^(funnel|pie)", dfType$type) ||
-    #              grepl("^(force|chord)", dfType$type) ||
-    #              grepl("^(tree|treemap)", dfType$type)))
-    #         stop(paste("recharts2 does not support such mixed types yet."))
-    # }
+    ## if pie/rose/ring, with series, shrink radius
+    if (!all(is.na(layout$series))){
+        which.pie = which(layout$type %in% c('pie', 'ring', 'rose'))
+        if (length(which.pie) > 0){
+            pie.layout = layout[which.pie,]
+            if (convPct2Num(pie.layout$radius[1]) < 0.25 * max(pie.layout$iseries)){
+                delta.radius = (convPct2Num(pie.layout$radius[1]) - 0.25)/
+                    (max(pie.layout$iseries)-1)
+            }else{
+                delta.radius = 0.25
+            }
+            pie.layout$radius = convNum2Pct(
+                convPct2Num(pie.layout$radius) -
+                    (pie.layout$iseries-1) * delta.radius
+            )
+            layout[which.pie, 'radius'] = pie.layout$radius
+        }
+    }
 
     # ---------------------------params list----------------------
     .makeSeriesList = cmpfun(function(t){

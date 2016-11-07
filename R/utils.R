@@ -999,6 +999,7 @@ autoMultiChartLayout = function(
         layouts$defects = layouts$empty + layouts$diff
         layouts = layouts[order(layouts$defects, layouts$diff, layouts$empty,
                                 layouts$row), ]
+        if (n <= 3) layouts = layouts[layouts$empty == 0,]
         rows = layouts[1, 'row']
         cols = layouts[1, 'col']
     }
