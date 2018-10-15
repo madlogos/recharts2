@@ -1,5 +1,9 @@
 v 0.0.1 (under development)
 
+> 本包开发宣告中止，弃坑。请大家直接从CRAN下载John Coene开发的[`echarts4r`](https://echarts4r.john-coene.com/).
+
+----
+
 # An R Interface to Baidu Echarts3
 
 [Echarts3](http://echarts.baidu.com/index.html) is an open source JavaScript library developed by Baidu Inc. for interactive charts. Compared to other popular js libraries, Echarts is more Chinese-friendly. The latest stable release of Echarts3 is 3.2.3. 
